@@ -3,11 +3,12 @@ export type TileLayerSource = {
   label: string;
   layer: string;
   tileMatrixSet: string;
-  format: "jpg" | "png";
+  format: "jpg" | "jpeg" | "png" | "tif";
   attribution: string;
   infoUrl?: string;
   urlTemplate: string;
   opacity: number;
+  kind?: "wmts" | "geotiff";
 };
 
 export type Snapshot = {
@@ -48,6 +49,10 @@ export type DatasetResponse = {
 
 const gibsUrlTemplate =
   "https://gibs.earthdata.nasa.gov/wmts/epsg3413/best/{layer}/default/{time}/{tileMatrixSet}/{z}/{y}/{x}.{format}";
+const gibsStaticUrlTemplate =
+  "https://gibs.earthdata.nasa.gov/wmts/epsg3413/best/{layer}/default/{tileMatrixSet}/{z}/{y}/{x}.{format}";
+const noaaGeoTiffTemplate =
+  "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/geotiff/{year}/{month}_{monthName}/N_{ymd}_concentration_v4.0.tif";
 
 export const dataset: DatasetResponse = {
   mapConfig: {
@@ -70,26 +75,36 @@ export const dataset: DatasetResponse = {
     ]
   },
   baseLayers: {
-    modis: {
-      id: "modis",
-      label: "MODIS Terra True Color",
-      layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
-      tileMatrixSet: "250m",
-      format: "jpg",
-      attribution: "NASA GIBS",
-      urlTemplate: gibsUrlTemplate,
-      opacity: 0.95
-    },
     blueMarble: {
       id: "blueMarble",
-      label: "Blue Marble Relief",
-      layer: "BlueMarble_ShadedRelief_Bathymetry",
-      tileMatrixSet: "250m",
-      format: "jpg",
+      label: "Blue Marble",
+      layer: "BlueMarble_NextGeneration",
+      tileMatrixSet: "500m",
+      format: "jpeg",
       attribution: "NASA GIBS",
-      urlTemplate: gibsUrlTemplate,
+      urlTemplate: gibsStaticUrlTemplate,
       opacity: 0.9
-    }
+    },
+    blueMarbleBathymetry: {
+      id: "blueMarbleBathymetry",
+      label: "Blue Marble Bathymetry",
+      layer: "BlueMarble_ShadedRelief_Bathymetry",
+      tileMatrixSet: "500m",
+      format: "jpeg",
+      attribution: "NASA GIBS",
+      urlTemplate: gibsStaticUrlTemplate,
+      opacity: 0.9
+    },
+    // modis: {
+    //   id: "modis",
+    //   label: "MODIS Terra True Color",
+    //   layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
+    //   tileMatrixSet: "250m",
+    //   format: "jpg",
+    //   attribution: "NASA GIBS",
+    //   urlTemplate: gibsUrlTemplate,
+    //   opacity: 0.95
+    // }
   },
   iceSources: {
     seaIceConcentration: {
@@ -101,24 +116,26 @@ export const dataset: DatasetResponse = {
       attribution: "NSIDC · NASA GIBS",
       infoUrl: "https://earthdata.nasa.gov/gibs",
       urlTemplate: gibsUrlTemplate,
-      opacity: 0.7
+      opacity: 0.7,
+      kind: "wmts"
     },
-    seaIceAge: {
-      id: "seaIceAge",
-      label: "Sea Ice Age",
-      layer: "SeaIce_Thickness",
-      tileMatrixSet: "250m",
-      format: "png",
-      attribution: "NSIDC · NASA GIBS",
-      infoUrl: "https://earthdata.nasa.gov/gibs",
-      urlTemplate: gibsUrlTemplate,
-      opacity: 0.65
-    }
+    noaaSeaIceConcentration: {
+      id: "noaaSeaIceConcentration",
+      label: "NOAA Sea Ice Concentration (GeoTIFF)",
+      layer: "NOAA_G02135",
+      tileMatrixSet: "geotiff",
+      format: "tif",
+      attribution: "NSIDC NOAA G02135",
+      infoUrl: "https://nsidc.org/data/g02135",
+      urlTemplate: noaaGeoTiffTemplate,
+      opacity: 0.7,
+      kind: "geotiff"
+    },
   },
   overlays: {
     coastlines: {
-      id: "coastlines",
-      label: "Coastlines",
+      id: "coastlines_nasa",
+      label: "Coastlines NASA GIBS",
       layer: "Coastlines",
       tileMatrixSet: "250m",
       format: "png",
@@ -133,7 +150,17 @@ export const dataset: DatasetResponse = {
       tileMatrixSet: "250m",
       format: "png",
       attribution: "NASA GIBS",
-      urlTemplate: gibsUrlTemplate,
+      urlTemplate: gibsStaticUrlTemplate,
+        opacity: 1
+    },
+    graticuleExtended: {
+      id: "graticuleExtended",
+      label: "Graticule Extended",
+      layer: "Graticule_Extended",
+      tileMatrixSet: "1.5km",
+      format: "png",
+      attribution: "NASA GIBS",
+      urlTemplate: gibsStaticUrlTemplate,
       opacity: 0.6
     }
   },
@@ -236,3 +263,18 @@ export const buildTileUrl = (source: TileLayerSource, date: string) =>
     .replace("{time}", date)
     .replace("{tileMatrixSet}", source.tileMatrixSet)
     .replace("{format}", source.format);
+
+export const buildGeoTiffUrl = (source: TileLayerSource, date: string) => {
+  const [year, month, day] = date.split("-");
+  const monthIndex = Number(month) - 1;
+  const monthName = new Date(Number(year), monthIndex, 1).toLocaleString(
+    "en-US",
+    { month: "short" }
+  );
+  const paddedMonth = String(monthIndex + 1).padStart(2, "0");
+  return source.urlTemplate
+    .replace("{year}", year)
+    .replace("{month}", paddedMonth)
+    .replace("{monthName}", monthName)
+    .replace("{ymd}", `${year}${paddedMonth}${day}`);
+};
