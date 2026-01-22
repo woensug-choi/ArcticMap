@@ -12,3 +12,7 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'out', 'index.html'));
 }
 app.whenReady().then(createWindow);
+
+app.on('window-all-closed', () => {
+  app.quit()
+})
