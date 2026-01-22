@@ -82,10 +82,11 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (dataset && activeIndex >= dataset.snapshots.length) {
-      setActiveIndex(0);
-    }
-  }, [dataset, activeIndex]);
+  if (!dataset) return;
+  if (!baseLayerKey) setBaseLayerKey(dataset.defaults.baseLayerKey);
+  if (!iceSourceKey) setIceSourceKey(dataset.defaults.iceSourceKey);
+}, [dataset, baseLayerKey, iceSourceKey]);
+
 
   useEffect(() => {
     if (!isPlaying || snapshots.length === 0) return;
@@ -197,3 +198,4 @@ export default function HomePage() {
     </main>
   );
 }
+
