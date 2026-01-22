@@ -216,6 +216,20 @@ export const dataset: DatasetResponse = {
   }
 };
 
+export const calendarDays: (number | null)[] = (() => {
+  // Generates a Sunday-starting calendar grid for January 2026
+  const year = 2026;
+  const month = 0; // January (0-based)
+  const first = new Date(year, month, 1);
+  const startDay = first.getDay(); // 0 = Sunday
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+})();
+
 export const buildTileUrl = (source: TileLayerSource, date: string) =>
   source.urlTemplate
     .replace("{layer}", source.layer)

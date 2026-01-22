@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DatasetResponse, TileLayerSource } from "@/lib/datasets";
-import { buildTileUrl } from "@/lib/datasets";
+import { buildTileUrl, calendarDays } from "@/lib/datasets";
 
 export default function HomePage() {
   const [dataset, setDataset] = useState<DatasetResponse | null>(null);
