@@ -102,23 +102,11 @@ export default function HomePage() {
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <header className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-600 bg-slate-900">
-              <svg viewBox="0 0 64 64" className="h-9 w-9" aria-hidden="true">
-                <circle cx="32" cy="32" r="20" fill="#e2e8f0" />
-                <path
-                  d="M22 26c4 8 10 12 20 12"
-                  stroke="#1e40af"
-                  strokeWidth="2"
-                  fill="none"
-                />
-                <path
-                  d="M20 38c6-6 18-8 26-6"
-                  stroke="#1e40af"
-                  strokeWidth="2"
-                  fill="none"
-                />
-              </svg>
-            </div>
+            <img
+              src="/logo_white.svg"
+              alt="Arctic Map logo"
+              className="h-12 w-12"
+            />
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
                 Polar View
