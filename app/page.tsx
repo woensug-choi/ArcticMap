@@ -2,8 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import DataLayersPanel from "@/components/DataLayersPanel";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/components/LanguageProvider";
 import { buildGeoTiffUrl, buildTileUrl, dataset as datasetData } from "@/lib/datasets";
 
 const MapViewer = dynamic(() => import("../components/MapViewer"), {
@@ -26,6 +28,7 @@ export default function HomePage() {
   const [iceSourceKey, setIceSourceKey] = useState<string>(dataset.defaults.iceSourceKey); //iceSourcekey: 해빙데이터 소스
   const [showCoastlines, setShowCoastlines] = useState(dataset.defaults.showCoastlines); //해안선 표시 위경도 격자 표시여부 
   const [showGraticule, setShowGraticule] = useState(dataset.defaults.showGraticule);
+  const { t } = useLanguage();
 
   const snapshots = dataset?.snapshots ?? []; //snapshots: 가능한 날짜 목록 
   const active = snapshots[activeIndex] ?? null; //active: 현재 선택된 날짜 객체 
@@ -88,18 +91,21 @@ export default function HomePage() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
-                Polar View
+                {t("appName")}
               </p>
               <h1 className="text-2xl font-semibold text-slate-100">
-                Arctic sea ice concentration browser
+                {t("appTitle")}
               </h1>
             </div>
           </div>
-          <div className="flex flex-1 items-center justify-end gap-2 text-xs text-slate-400">
-            <span>Source: {activeIceSource?.label ?? "Loading..."}</span>
+          <div className="flex flex-1 items-center justify-end gap-4 text-xs text-slate-400">
+            <LanguageSwitcher />
+            <span>
+              {t("sourceLabel")}: {activeIceSource?.label ?? t("loading")}
+            </span>
             <span className="h-1 w-1 rounded-full bg-slate-600" />
             <span>
-              Projection: {dataset?.mapConfig.projection ?? "Loading..."}
+              {t("projectionLabel")}: {dataset?.mapConfig.projection ?? t("loading")}
             </span>
           </div>
         </header>
@@ -136,13 +142,13 @@ export default function HomePage() {
               <CardContent className="flex flex-wrap items-center justify-between gap-6 px-5 py-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                    Selected day
+                    {t("selectedDay")}
                   </p>
                   <p className="text-2xl font-semibold text-slate-100">
-                    {active?.label ?? "Loading..."}
+                    {active?.label ?? t("loading")}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {active?.date ?? "Loading..."}
+                    {active?.date ?? t("loading")}
                   </p>
                 </div>
               </CardContent>
