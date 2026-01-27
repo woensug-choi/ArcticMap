@@ -352,7 +352,7 @@ return () => {
     }
   }, [showGraticule]);
 
-  const mapHeight = 627;
+  const mapHeight = 626;
 
   return (
     <Card className={`relative min-h-[${mapHeight}px] overflow-hidden border-slate-700`}>
