@@ -4,8 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DataLayersPanel from "@/components/DataLayersPanel";
-import type { DatasetResponse } from "@/lib/datasets";
-import { buildGeoTiffUrl, buildTileUrl } from "@/lib/datasets";
+import { buildGeoTiffUrl, buildTileUrl, dataset as datasetData } from "@/lib/datasets";
 
 const MapViewer = dynamic(() => import("../components/MapViewer"), {
   ssr: false,
@@ -19,14 +18,14 @@ const CalendarSelector = dynamic(
 );
 
 export default function HomePage() {
-  const [dataset, setDataset] = useState<DatasetResponse | null>(null); //api 데이터를 받아오는 전체 설정 데이터 
+  const dataset = datasetData; //정적 데이터 사용
   const [activeIndex, setActiveIndex] = useState(0); // activeIndwx: 현재 선택된 날짜
   const [isPlaying, setIsPlaying] = useState(false); // isplaying: 재생 중인지 여부 
   const [playbackSpeed, setPlaybackSpeed] = useState(1000); //palyback speed: 날짜 넘어가는 속도 ㅡ> 날짜 애니메이션 플레이어 
-  const [baseLayerKey, setBaseLayerKey] = useState<string>(""); //baselayerkey: 베이스맵 종류(osm, 위성)
-  const [iceSourceKey, setIceSourceKey] = useState<string>(""); //iceSourcekey: 해빙데이터 소스
-  const [showCoastlines, setShowCoastlines] = useState(true); //해안선 표시 위경도 격자 표시여부 
-  const [showGraticule, setShowGraticule] = useState(true);
+  const [baseLayerKey, setBaseLayerKey] = useState<string>(dataset.defaults.baseLayerKey); //baselayerkey: 베이스맵 종류(osm, 위성)
+  const [iceSourceKey, setIceSourceKey] = useState<string>(dataset.defaults.iceSourceKey); //iceSourcekey: 해빙데이터 소스
+  const [showCoastlines, setShowCoastlines] = useState(dataset.defaults.showCoastlines); //해안선 표시 위경도 격자 표시여부 
+  const [showGraticule, setShowGraticule] = useState(dataset.defaults.showGraticule);
 
   const snapshots = dataset?.snapshots ?? []; //snapshots: 가능한 날짜 목록 
   const active = snapshots[activeIndex] ?? null; //active: 현재 선택된 날짜 객체 
@@ -49,44 +48,10 @@ export default function HomePage() {
     return buildTileUrl(activeIceSource, activeDate);
   }, [activeIceSource, activeDate]);
 
-  useEffect(() => { //apo/dates 호출, 전체 메타데이터 로드 
-    let mounted = true;
-
-    const loadData = async () => {
-      try {
-        const response = await fetch("/api/datasets");
-        if (!response.ok) {
-          throw new Error("Failed to load dataset metadata.");
-        }
-        const payload: DatasetResponse = await response.json();
-        if (mounted) {
-          setDataset(payload);
-          setBaseLayerKey(
-            (current) => current || payload.defaults.baseLayerKey,
-          );
-          setIceSourceKey(
-            (current) => current || payload.defaults.iceSourceKey,
-          );
-          setShowCoastlines(payload.defaults.showCoastlines);
-          setShowGraticule(payload.defaults.showGraticule);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    void loadData();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   useEffect(() => { //데이터가 있는데 key 비어 있을 경우 대비 안정성요 안정 장치 
-  if (!dataset) return;
-  if (!baseLayerKey) setBaseLayerKey(dataset.defaults.baseLayerKey);
-  if (!iceSourceKey) setIceSourceKey(dataset.defaults.iceSourceKey);
-}, [dataset, baseLayerKey, iceSourceKey]);
+    if (!baseLayerKey) setBaseLayerKey(dataset.defaults.baseLayerKey);
+    if (!iceSourceKey) setIceSourceKey(dataset.defaults.iceSourceKey);
+  }, [dataset.defaults.baseLayerKey, dataset.defaults.iceSourceKey, baseLayerKey, iceSourceKey]);
 
 
   useEffect(() => { //누르면 날짜 자동 증가, 마지막 날짜 처음으로 루프, 속도 조절 가능 

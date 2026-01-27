@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import CalendarSelector from "@/components/CalendarSelector";
-import type { DatasetResponse } from "@/lib/datasets";
+import { dataset as datasetData } from "@/lib/datasets";
 
 export default function CalendarTestPage() {
-  const [dataset, setDataset] = useState<DatasetResponse | null>(null);
+  const dataset = datasetData;
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1000);
@@ -13,30 +13,6 @@ export default function CalendarTestPage() {
   const snapshots = dataset?.snapshots ?? [];
   const active = snapshots[activeIndex] ?? null;
   const activeDay = active ? Number(active.date.split("-")[2]) : null;
-
-  useEffect(() => {
-    let mounted = true;
-    const loadData = async () => {
-      try {
-        const response = await fetch("/api/datasets");
-        if (!response.ok) {
-          throw new Error("Failed to load dataset metadata.");
-        }
-        const payload: DatasetResponse = await response.json();
-        if (mounted) {
-          setDataset(payload);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    void loadData();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (dataset && activeIndex >= dataset.snapshots.length) {

@@ -2,17 +2,16 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import type { DatasetResponse } from "@/lib/datasets";
-import { buildGeoTiffUrl, buildTileUrl } from "@/lib/datasets";
+import { buildGeoTiffUrl, buildTileUrl, dataset as datasetData } from "@/lib/datasets";
 
 const MapViewer = dynamic(() => import("@/components/MapViewer"), { ssr: false });
 
 export default function MapTestPage() {
-  const [dataset, setDataset] = useState<DatasetResponse | null>(null);
-  const [baseLayerKey, setBaseLayerKey] = useState<string>("");
-  const [iceSourceKey, setIceSourceKey] = useState<string>("");
-  const [showCoastlines, setShowCoastlines] = useState(true);
-  const [showGraticule, setShowGraticule] = useState(true);
+  const dataset = datasetData;
+  const [baseLayerKey, setBaseLayerKey] = useState<string>(dataset.defaults.baseLayerKey);
+  const [iceSourceKey, setIceSourceKey] = useState<string>(dataset.defaults.iceSourceKey);
+  const [showCoastlines, setShowCoastlines] = useState(dataset.defaults.showCoastlines);
+  const [showGraticule, setShowGraticule] = useState(dataset.defaults.showGraticule);
 
   const activeDate = dataset?.defaults.defaultDate ?? "";
   const activeIceSource = dataset?.iceSources[iceSourceKey];
@@ -32,32 +31,9 @@ export default function MapTestPage() {
   }, [activeIceSource, activeDate]);
 
   useEffect(() => {
-    let mounted = true;
-    const loadData = async () => {
-      try {
-        const response = await fetch("/api/datasets");
-        if (!response.ok) {
-          throw new Error("Failed to load dataset metadata.");
-        }
-        const payload: DatasetResponse = await response.json();
-        if (mounted) {
-          setDataset(payload);
-          setBaseLayerKey((current) => current || payload.defaults.baseLayerKey);
-          setIceSourceKey((current) => current || payload.defaults.iceSourceKey);
-          setShowCoastlines(payload.defaults.showCoastlines);
-          setShowGraticule(payload.defaults.showGraticule);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    void loadData();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (!baseLayerKey) setBaseLayerKey(dataset.defaults.baseLayerKey);
+    if (!iceSourceKey) setIceSourceKey(dataset.defaults.iceSourceKey);
+  }, [dataset.defaults.baseLayerKey, dataset.defaults.iceSourceKey, baseLayerKey, iceSourceKey]);
 
   return (
     <main className="min-h-screen bg-[#0b1220] px-6 py-10 text-slate-100">

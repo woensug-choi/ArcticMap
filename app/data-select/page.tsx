@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { DatasetResponse, TileLayerSource } from "@/lib/datasets";
-import { buildGeoTiffUrl, buildTileUrl } from "@/lib/datasets";
+import type { TileLayerSource } from "@/lib/datasets";
+import { buildGeoTiffUrl, buildTileUrl, dataset as datasetData } from "@/lib/datasets";
 
 const getDateRange = (dates: string[]) => {
   if (dates.length === 0) {
@@ -14,12 +14,11 @@ const getDateRange = (dates: string[]) => {
 };
 
 export default function DataDebugPage() {
-  const [dataset, setDataset] = useState<DatasetResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [baseLayerKey, setBaseLayerKey] = useState<string>("");
-  const [iceSourceKey, setIceSourceKey] = useState<string>("");
-  const [showCoastlines, setShowCoastlines] = useState(true);
-  const [showGraticule, setShowGraticule] = useState(true);
+  const dataset = datasetData;
+  const [baseLayerKey, setBaseLayerKey] = useState<string>(dataset.defaults.baseLayerKey);
+  const [iceSourceKey, setIceSourceKey] = useState<string>(dataset.defaults.iceSourceKey);
+  const [showCoastlines, setShowCoastlines] = useState(dataset.defaults.showCoastlines);
+  const [showGraticule, setShowGraticule] = useState(dataset.defaults.showGraticule);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [previewType, setPreviewType] = useState<"base" | "ice" | "overlay">(
     "ice",
@@ -56,42 +55,7 @@ export default function DataDebugPage() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    const loadData = async () => {
-      try {
-        const response = await fetch("/api/datasets");
-        if (!response.ok) {
-          throw new Error("Failed to load dataset metadata.");
-        }
-        const payload: DatasetResponse = await response.json();
-        if (mounted) {
-          setDataset(payload);
-          setBaseLayerKey(
-            (current) => current || payload.defaults.baseLayerKey,
-          );
-          setIceSourceKey(
-            (current) => current || payload.defaults.iceSourceKey,
-          );
-          setShowCoastlines(payload.defaults.showCoastlines);
-          setShowGraticule(payload.defaults.showGraticule);
-          setSelectedDate((current) => current || dateOptions.yesterday);
-        }
-      } catch (fetchError) {
-        if (mounted) {
-          setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : String(fetchError),
-          );
-        }
-      }
-    };
-
-    void loadData();
-
-    return () => {
-      mounted = false;
-    };
+    setSelectedDate((current) => current || dateOptions.yesterday);
   }, [dateOptions.yesterday]);
 
   const snapshotRange = useMemo(() => {
@@ -236,15 +200,6 @@ export default function DataDebugPage() {
             Verifies API payloads, layer paths, and available date ranges.
           </p>
         </header>
-
-        {error ? (
-          <Card className="border-red-500/40 bg-red-500/10">
-            <CardHeader>
-              <CardTitle>Failed to load API</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-red-200">{error}</CardContent>
-          </Card>
-        ) : null}
 
         <section className="flex flex-col gap-4">
           <Card>
