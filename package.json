@@ -1,20 +1,38 @@
 {
-  "name": "arctic-map-codex",
+  "name": "arctic-map-viewer",
+  "description": "An Electron app using Next.js to visualize Arctic datasets.",
+  "author": "Woen-Sug Choi <wschoi@kmou.ac.kr>",
   "version": "0.1.0",
-  "private": true,
+  "main": "main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "electron-forge start",
+    "pack": "npm run build && electron-builder",
+    "lint": "next lint",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "build": {
+    "appId": "com.example.next-arctic-map-viewer",
+    "files": [
+      "main.js",
+      "out"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "@radix-ui/react-slider": "^1.3.6",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "eslint-config-next": "^16.1.4",
+    "express": "^5.2.1",
     "georaster": "^1.6.0",
     "georaster-layer-for-leaflet": "^4.1.2",
     "leaflet": "^1.9.4",
@@ -29,13 +47,27 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
+    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron/fuses": "^1.8.0",
     "@types/leaflet": "^1.9.21",
     "@types/node": "20.14.12",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.20",
+    "browserify-sign": "^2.3.0",
+    "date-fns": "^4.1.0",
+    "electron": "^40.0.0",
+    "electron-squirrel-startup": "^1.0.1",
+    "eslint-config-next": "^16.1.4",
     "postcss": "8.4.41",
     "tailwindcss": "3.4.9",
-    "typescript": "5.5.4"
+    "typescript": "5.5.4",
+    "webpack": "^5.104.1"
   }
 }
