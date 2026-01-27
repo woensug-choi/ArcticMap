@@ -25,29 +25,34 @@ export default function MapTestPage() {
 
   const iceLayerUrl = useMemo(() => {
     if (!activeIceSource || !activeDate) return "";
-    if (activeIceSource.kind === "geotiff") return buildGeoTiffUrl(activeIceSource, activeDate);
+    if (activeIceSource.kind === "geotiff") {
+      return buildGeoTiffUrl(activeIceSource, activeDate);
+    }
     return buildTileUrl(activeIceSource, activeDate);
   }, [activeIceSource, activeDate]);
 
   useEffect(() => {
     let mounted = true;
-
-    (async () => {
+    const loadData = async () => {
       try {
         const response = await fetch("/api/datasets");
-        if (!response.ok) throw new Error("Failed to load dataset metadata.");
+        if (!response.ok) {
+          throw new Error("Failed to load dataset metadata.");
+        }
         const payload: DatasetResponse = await response.json();
-        if (!mounted) return;
-
-        setDataset(payload);
-        setBaseLayerKey(payload.defaults.baseLayerKey);
-        setIceSourceKey(payload.defaults.iceSourceKey);
-        setShowCoastlines(payload.defaults.showCoastlines);
-        setShowGraticule(payload.defaults.showGraticule);
-      } catch (e) {
-        console.error(e);
+        if (mounted) {
+          setDataset(payload);
+          setBaseLayerKey((current) => current || payload.defaults.baseLayerKey);
+          setIceSourceKey((current) => current || payload.defaults.iceSourceKey);
+          setShowCoastlines(payload.defaults.showCoastlines);
+          setShowGraticule(payload.defaults.showGraticule);
+        }
+      } catch (error) {
+        console.error(error);
       }
-    })();
+    };
+
+    void loadData();
 
     return () => {
       mounted = false;
