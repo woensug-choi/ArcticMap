@@ -68,6 +68,7 @@ export default function MapTestPage() {
           </p>
           <h1 className="text-2xl font-semibold">Map viewer</h1>
         </header>
+
         <MapViewer
           dataset={dataset}
           activeDate={activeDate}
