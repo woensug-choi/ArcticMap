@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import { useLanguage } from "@/components/LanguageProvider";
 import type { DatasetResponse } from "@/lib/datasets";
 import { calendarDays } from "@/lib/datasets";
 
@@ -26,12 +27,13 @@ export default function CalendarSelector({
   playbackSpeed,
   setPlaybackSpeed
 }: CalendarSelectorProps) {
+  const { t, messages } = useLanguage();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Date Selector</CardTitle>
+        <CardTitle>{t("dateSelector")}</CardTitle>
         <p className="text-xs text-slate-400">
-          January 2026 · Use arrows to step days.
+          {t("dateSelectorHint")}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -50,7 +52,7 @@ export default function CalendarSelector({
             &lt;
           </Button>
           <div className="text-sm font-semibold text-slate-200">
-            Jan 2026
+            {t("monthLabel")}
           </div>
           <Button
             variant="outline"
@@ -64,7 +66,7 @@ export default function CalendarSelector({
           </Button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-slate-400">
-          {"Su Mo Tu We Th Fr Sa".split(" ").map((day) => (
+          {messages.weekdaysShort.map((day) => (
             <div key={day} className="py-1 font-semibold">
               {day}
             </div>
@@ -109,12 +111,15 @@ export default function CalendarSelector({
             className="w-full border-slate-600 bg-slate-900/70 text-slate-200"
             onClick={() => setIsPlaying((value) => !value)}
           >
-            {isPlaying ? "Stop animation" : "Start Animation"}
+            {isPlaying ? t("animationStop") : t("animationStart")}
           </Button>
           <div className="space-y-2 text-xs text-slate-400">
             <div className="flex items-center justify-between">
-              <span>Animation speed</span>
-              <span>{(playbackSpeed / 1000).toFixed(1)}s</span>
+              <span>{t("animationSpeed")}</span>
+              <span>
+                {(playbackSpeed / 1000).toFixed(1)}
+                {t("secondsShort")}
+              </span>
             </div>
             <Slider
               value={[playbackSpeed]}
@@ -122,7 +127,7 @@ export default function CalendarSelector({
               max={2000}
               step={100}
               onValueChange={(value) => setPlaybackSpeed(value[0] ?? 500)}
-              aria-label="Animation speed"
+              aria-label={t("animationSpeed")}
             />
           </div>
         </div>
