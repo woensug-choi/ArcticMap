@@ -218,49 +218,54 @@ return () => {
 
   if (activeIceSource?.kind === "geotiff") {
     cleanup();
-
+  
     (async () => {
       try {
-        console.log("[GeoTIFF] url =", iceLayerUrl);
-         
-        const res = await fetch(iceLayerUrl, { signal: controller.signal });
-
-        console.log("[GeoTIFF] status =", res.status, res.statusText);
-
-        if (!res.ok) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
-
+        if (!iceLayerUrl) return;
+  
+        const proxied = `/api/proxy?url=${encodeURIComponent(iceLayerUrl)}`;
+        console.log("[GeoTIFF] FETCH VIA PROXY:", proxied);
+  
+        const res = await fetch(proxied, { signal: controller.signal });
+        if (!res.ok) {
+          throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
+        }
+  
         const buf = await res.arrayBuffer();
-
+  
         const { default: parseGeoraster } = await import("georaster");
-        const { default: GeoRasterLayer } = await import("georaster-layer-for-leaflet");
-
+        const { default: GeoRasterLayer } = await import(
+          "georaster-layer-for-leaflet"
+        );
+  
         if (cancelled) return;
-
+  
         const georaster = await parseGeoraster(buf);
-
+        
         if (cancelled) return;
-
+  
         const layer = new GeoRasterLayer({
           georaster,
-          opacity: activeIceSource?.opacity ?? 0.7,
+          opacity: activeIceSource.opacity ?? 0.7,
         });
-
+  
         geoTiffLayer.current = layer;
         layer.addTo(map);
-
+  
         console.log("[GeoTIFF] added ✅");
       } catch (e) {
-        // ✅ 여기서 잡히면 빨간 오버레이 안 뜸
+
         console.error("[GeoTIFF] error ❌", e);
       }
     })();
-
+  
     return () => {
       cancelled = true;
       controller.abort();
       cleanup();
     };
   }
+  
 
   // ✅ tile layer 모드
   if (geoTiffLayer.current) {
