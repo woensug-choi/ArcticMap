@@ -221,12 +221,9 @@ return () => {
 
     (async () => {
       try {
-         const proxied = `/api/proxy?url=${encodeURIComponent(iceLayerUrl)}`;
+        console.log("[GeoTIFF] url =", iceLayerUrl);
          
-         console.log("[GeoTIFF] url =", iceLayerUrl);
-         console.log("[GeoTIFF] proxied =", proxied);
-         
-         const res = await fetch(proxied, { signal: controller.signal });
+        const res = await fetch(iceLayerUrl, { signal: controller.signal });
 
         console.log("[GeoTIFF] status =", res.status, res.statusText);
 
@@ -353,10 +350,10 @@ return () => {
   }, [showGraticule]);
 
   return (
-    <Card className="relative min-h-[520px] overflow-hidden border-slate-700">
+    <Card className="relative min-h-[655px] overflow-hidden border-slate-700">
      <div
   ref={mapRef}
-  className="h-[520px] w-full bg-slate-900"
+  className="h-[655px] w-full bg-slate-900"
   aria-label="Arctic sea ice map"
 />
       <div className="absolute bottom-4 right-4 rounded-md bg-slate-900/80 px-3 py-2 text-xs text-slate-300">
