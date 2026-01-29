@@ -13,7 +13,7 @@ interface DataLayersPanelProps {
   iceSourceKey: string;
   setIceSourceKey: Dispatch<SetStateAction<string>>;
   baseLayerKey: string;
-  setBaseLayerKey: Dispatch<SetStateAction<string>>;
+  setBaseLayerKey: Dispatch<SetStateAction<string>>;  
   showCoastlines: boolean;
   setShowCoastlines: Dispatch<SetStateAction<boolean>>;
   showGraticule: boolean;
@@ -100,36 +100,46 @@ export default function DataLayersPanel({
             aria-label={t("iceConcentration")}
             className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200"
           >
+            <option value="">Select data</option>
             {Object.entries(dataset?.iceSources ?? {}).map(([key, source]) => (
               <option key={key} value={key}>
                 {source.label}
               </option>
             ))}
           </select>
+          
           <div className="text-[11px] text-slate-500">
             <span>{t("info")}: </span>
-            <a
-              href={activeIceSource?.infoUrl ?? "#"}
+            {activeIceSource?.infoUrl ? (
+              <a
+              href={activeIceSource.infoUrl}
               className="text-sky-300 underline decoration-slate-600 underline-offset-2"
-            >
-              {activeIceSource?.infoUrl ?? t("loading")}
-            </a>
+              >
+                {activeIceSource.infoUrl}
+                </a>
+                ) : (
+                <span className="text-slate-500">Select data to view info</span>
+                )}
+
           </div>
         </div>
         <div className="space-y-2">
           <p className="text-slate-300">{t("baseMap")}</p>
-          <select
-            value={baseLayerKey}
-            onChange={(event) => setBaseLayerKey(event.target.value)}
-            aria-label={t("baseMap")}
-            className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200"
+          <select 
+          value={baseLayerKey}
+          onChange={(event) => setBaseLayerKey(event.target.value)}
+          aria-label={t("baseMap")}
+          className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200"
           >
-            {Object.entries(dataset?.baseLayers ?? {}).map(([key, layer]) => (
-              <option key={key} value={key}>
-                {layer.label}
-              </option>
-            ))}
-          </select>
+              <option value="">Select basemap</option>
+              
+              {Object.entries(dataset?.baseLayers ?? {}).map(([key, layer]) => (
+                <option key={key} value={key}>
+                  {layer.label}
+                  </option>
+                ))}
+                </select>
+                
           <p className="text-[11px] text-slate-500">
             {t("active")}: {activeBaseLayer?.label ?? t("loading")}
           </p>
@@ -177,9 +187,10 @@ export default function DataLayersPanel({
             </CardHeader>
             <CardContent className="h-full overflow-y-auto space-y-6 text-xs text-slate-300 scrollbar-dark">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                  {t("baseLayersLabel")}
+              <p className="text-[11px] text-slate-500">
+                {t("active")}: {activeBaseLayer ? activeBaseLayer.label : "None"}
                 </p>
+
                 <ul className="mt-2 space-y-3">
                   {dataset
                     ? Object.values(dataset.baseLayers).map(renderLayer)
