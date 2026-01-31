@@ -24,8 +24,8 @@ export default function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0); // activeIndwx: 현재 선택된 날짜
   const [isPlaying, setIsPlaying] = useState(false); // isplaying: 재생 중인지 여부 
   const [playbackSpeed, setPlaybackSpeed] = useState(1000); //palyback speed: 날짜 넘어가는 속도 ㅡ> 날짜 애니메이션 플레이어 
-  const [baseLayerKey, setBaseLayerKey] = useState<string>(dataset.defaults.baseLayerKey); //baselayerkey: 베이스맵 종류(osm, 위성)
-  const [iceSourceKey, setIceSourceKey] = useState<string>(dataset.defaults.iceSourceKey); //iceSourcekey: 해빙데이터 소스
+  const [baseLayerKey, setBaseLayerKey] = useState<string>(""); // ✅ 기본은 basemap 없음
+  const [iceSourceKey, setIceSourceKey] = useState<string>(""); // ✅ 기본: Select data
   const [showCoastlines, setShowCoastlines] = useState(dataset.defaults.showCoastlines); //해안선 표시 위경도 격자 표시여부 
   const [showGraticule, setShowGraticule] = useState(dataset.defaults.showGraticule);
   const { t } = useLanguage();
@@ -33,8 +33,11 @@ export default function HomePage() {
   const snapshots = dataset?.snapshots ?? []; //snapshots: 가능한 날짜 목록 
   const active = snapshots[activeIndex] ?? null; //active: 현재 선택된 날짜 객체 
   const activeDay = active ? Number(active.date.split("-")[2]) : null; //캘린더에서 강조할 일
-  const activeIceSource = dataset?.iceSources[iceSourceKey]; //key 기반으로 실제 레이더 설정 객체 가져옴 
-  const activeBaseLayer = dataset?.baseLayers[baseLayerKey];
+  const activeIceSource = iceSourceKey ? dataset?.iceSources[iceSourceKey] : undefined; 
+  const activeBaseLayer = baseLayerKey
+  ? dataset?.baseLayers[baseLayerKey]
+  : undefined;
+
 
   const activeDate = active?.date ?? dataset?.defaults.defaultDate ?? ""; //선택 된 날짜가 없으면 기본 날짜 사용 
 
@@ -51,10 +54,7 @@ export default function HomePage() {
     return buildTileUrl(activeIceSource, activeDate);
   }, [activeIceSource, activeDate]);
 
-  useEffect(() => { //데이터가 있는데 key 비어 있을 경우 대비 안정성요 안정 장치 
-    if (!baseLayerKey) setBaseLayerKey(dataset.defaults.baseLayerKey);
-    if (!iceSourceKey) setIceSourceKey(dataset.defaults.iceSourceKey);
-  }, [dataset.defaults.baseLayerKey, dataset.defaults.iceSourceKey, baseLayerKey, iceSourceKey]);
+
 
 
   useEffect(() => { //누르면 날짜 자동 증가, 마지막 날짜 처음으로 루프, 속도 조절 가능 
@@ -101,8 +101,12 @@ export default function HomePage() {
           <div className="flex flex-1 items-center justify-end gap-4 text-xs text-slate-400">
             <LanguageSwitcher />
             <span>
-              {t("sourceLabel")}: {activeIceSource?.label ?? t("loading")}
-            </span>
+              {t("sourceLabel")}:{" "}
+              {activeIceSource
+              ? activeIceSource.label
+              : t("selectDataToViewInfo")}
+              </span>
+
             <span className="h-1 w-1 rounded-full bg-slate-600" />
             <span>
               {t("projectionLabel")}: {dataset?.mapConfig.projection ?? t("loading")}
