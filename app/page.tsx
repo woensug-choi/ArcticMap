@@ -54,7 +54,7 @@ export default function HomePage() {
     return buildTileUrl(activeIceSource, activeDate);
   }, [activeIceSource, activeDate]);
 
-  
+
 
 
   useEffect(() => { //누르면 날짜 자동 증가, 마지막 날짜 처음으로 루프, 속도 조절 가능 
@@ -101,8 +101,12 @@ export default function HomePage() {
           <div className="flex flex-1 items-center justify-end gap-4 text-xs text-slate-400">
             <LanguageSwitcher />
             <span>
-              {t("sourceLabel")}: {activeIceSource?.label ?? t("loading")}
-            </span>
+              {t("sourceLabel")}:{" "}
+              {activeIceSource
+              ? activeIceSource.label
+              : t("selectDataToViewInfo")}
+              </span>
+
             <span className="h-1 w-1 rounded-full bg-slate-600" />
             <span>
               {t("projectionLabel")}: {dataset?.mapConfig.projection ?? t("loading")}

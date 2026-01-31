@@ -109,16 +109,18 @@ export default function DataLayersPanel({
           </select>
           
           <div className="text-[11px] text-slate-500">
-            <span>{t("info")}: </span>
+            {t("info")}:{" "}            
             {activeIceSource?.infoUrl ? (
               <a
               href={activeIceSource.infoUrl}
+              target="_blank"
+              rel="noreferrer"
               className="text-sky-300 underline decoration-slate-600 underline-offset-2"
               >
-                {activeIceSource.infoUrl}
+                {activeIceSource.label}
                 </a>
                 ) : (
-                <span className="text-slate-500">Select data to view info</span>
+                  <span>{t("selectDataToViewInfo")}</span>
                 )}
 
           </div>
@@ -140,9 +142,11 @@ export default function DataLayersPanel({
                 ))}
                 </select>
                 
-          <p className="text-[11px] text-slate-500">
-            {t("active")}: {activeBaseLayer?.label ?? t("loading")}
-          </p>
+                <p className="text-[11px] text-slate-500">
+                  {t("active")}:{" "}
+                  {activeBaseLayer ? activeBaseLayer.label : "Select basemap"}
+                  </p>
+
         </div>
         <label className="flex items-center gap-2 text-xs text-slate-300">
           <input

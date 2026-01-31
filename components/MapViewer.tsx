@@ -403,10 +403,21 @@ useEffect(() => {
   )}
 </div>
 
-      <div className="absolute left-4 top-4 rounded-md bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300">
-        <div>Base map: {activeBaseLayer?.label ?? "Loading..."}</div>
-        <div>Ice layer: {activeIceSource?.label ?? "Loading..."}</div>
-      </div>
+<div className="absolute left-4 top-4 rounded-md bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300 pointer-events-none">
+  <div>
+    Base map:{" "}
+    {activeBaseLayer
+      ? activeBaseLayer.label
+      : "Select basemap to view info"}
+  </div>
+  <div>
+    Ice layer:{" "}
+    {activeIceSource
+      ? activeIceSource.label
+      : "Select data to view info"}
+  </div>
+</div>
+
     </Card>
   );
 }
