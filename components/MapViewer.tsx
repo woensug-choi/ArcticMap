@@ -7,6 +7,7 @@ import proj4leaflet from "proj4leaflet";
 import { Card } from "@/components/ui/card";
 import type { DatasetResponse, TileLayerSource } from "@/lib/datasets";
 import { buildTileUrl } from "@/lib/datasets";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface MapViewerProps {
   dataset: DatasetResponse | null;
@@ -39,6 +40,7 @@ export default function MapViewer({
   const didInitialView = useRef(false);
   const [cursor, setCursor] = useState<{ lat: number; lon: number } | null>(null);
   const dataBoundsRef = useRef<import("leaflet").LatLngBounds | null>(null);
+  const { t } = useLanguage();
 
   const overlayTileUrl = (overlay?: TileLayerSource, date: string | undefined = activeDate) => {
     if (!overlay || !date) return "";
@@ -439,8 +441,8 @@ export default function MapViewer({
       <div ref={mapRef} className="h-[655px] w-full bg-slate-900" aria-label="Arctic sea ice map" />
 
       <div className="absolute left-4 top-4 z-[1000] rounded-md bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300 pointer-events-none">
-        <div>Base map: {activeBaseLayer ? activeBaseLayer.label : "Select basemap"}</div>
-        <div>Ice layer: {activeIceSource ? activeIceSource.label : "Select data"}</div>
+        <div>{t("baseMap")}: {activeBaseLayer ? activeBaseLayer.label : <span>{t("notSelected")}</span>}</div>
+        <div>{t("iceConcentration")}: {activeIceSource ? activeIceSource.label : <span>{t("notSelected")}</span>}</div>
       </div>
 
     </Card>
