@@ -5,8 +5,8 @@ import proj4 from "proj4";
 import leaflet from "leaflet";
 import proj4leaflet from "proj4leaflet";
 import { Card } from "@/components/ui/card";
-import type { DatasetResponse, TileLayerSource } from "@/lib/datasets";
-import { buildTileUrl } from "@/lib/datasets";
+import type { DatasetResponse, GraticuleSource, TileLayerSource } from "@/lib/datasets";
+import { buildTileUrl, isGraticuleSource, isTileLayerSource } from "@/lib/datasets";
 import { useLanguage } from "@/components/LanguageProvider";
 
 interface MapViewerProps {
@@ -19,6 +19,158 @@ interface MapViewerProps {
   showCoastlines: boolean;
   showGraticule: boolean;
 }
+
+type OverlayLayer = import("leaflet").Layer & {
+  bringToFront?: () => void;
+  setUrl?: (url: string) => void;
+};
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
+const resolveGraticuleSettings = (source: GraticuleSource, zoom: number) => {
+  const match = source.zoomSteps?.find(
+    (step) =>
+      zoom >= step.minZoom &&
+      (step.maxZoom === undefined || zoom <= step.maxZoom),
+  );
+
+  const latStep = match?.latStep ?? source.latStep;
+  const lonStep = match?.lonStep ?? source.lonStep;
+  const segmentStep = match?.segmentStep ?? source.segmentStep;
+  const labelEveryLat = match?.labelEveryLat ?? source.labelEveryLat ?? latStep;
+  const labelEveryLon = match?.labelEveryLon ?? source.labelEveryLon ?? lonStep;
+
+  return { latStep, lonStep, segmentStep, labelEveryLat, labelEveryLon };
+};
+
+const shouldLabel = (value: number, every: number) => {
+  if (!Number.isFinite(every) || every <= 0) return false;
+  const ratio = value / every;
+  return Math.abs(ratio - Math.round(ratio)) < 1e-6;
+};
+
+const formatDegreeLabel = (value: number, kind: "lat" | "lon") => {
+  const abs = Math.abs(value);
+  let deg = Math.floor(abs + 1e-6);
+  let min = Math.round((abs - deg) * 60);
+  if (min === 60) {
+    deg += 1;
+    min = 0;
+  }
+  const dir =
+    kind === "lat"
+      ? value >= 0
+        ? "N"
+        : "S"
+      : value >= 0
+        ? "E"
+        : "W";
+  return `${deg}°${min}' ${dir}`;
+};
+
+const alignToStep = (value: number, step: number) =>
+  Math.ceil(value / step) * step;
+
+const buildGraticuleLayer = (
+  L: typeof leaflet,
+  source: GraticuleSource,
+  zoom: number,
+): import("leaflet").FeatureGroup => {
+  const resolved = resolveGraticuleSettings(source, zoom);
+  const latStep = Math.max(0.1, Math.abs(resolved.latStep));
+  const lonStep = Math.max(0.1, Math.abs(resolved.lonStep));
+  const segmentStep = Math.max(0.1, Math.abs(resolved.segmentStep));
+  const labelEveryLat = Math.max(0.1, Math.abs(resolved.labelEveryLat));
+  const labelEveryLon = Math.max(0.1, Math.abs(resolved.labelEveryLon));
+
+  const minLat = clamp(source.minLat, -89.999, 89.999);
+  const maxLat = clamp(source.maxLat, minLat, 90);
+  const parallelMaxLat = Math.min(maxLat, 89.999);
+
+  const style: import("leaflet").PolylineOptions = {
+    color: source.color ?? "#8fa7e8",
+    weight: source.weight ?? 1,
+    opacity: source.opacity ?? 0.7,
+    dashArray: source.dashArray,
+    interactive: false,
+    pane: "overlay",
+  };
+
+  const group = L.featureGroup();
+  const zoomOut = zoom <= 1;
+  const makeLabel = (lat: number, lon: number, text: string, kind: "lat" | "lon") => {
+    L.marker([lat, lon], {
+      icon: L.divIcon({
+        className: `graticule-label graticule-label--${kind}${
+          zoomOut ? " graticule-label--zoomout" : ""
+        }`,
+        html: `<span>${text}</span>`,
+        iconSize: [0, 0],
+      }),
+      interactive: false,
+      pane: "overlay-label",
+    }).addTo(group);
+  };
+
+  const latStart = alignToStep(minLat, latStep);
+  const lonStart = alignToStep(-180, lonStep);
+
+  const lonLineValues: number[] = [];
+  for (let lon = lonStart; lon < 180; lon += lonStep) {
+    lonLineValues.push(lon);
+  }
+
+  const latLineValues: number[] = [];
+  for (let lat = latStart; lat <= parallelMaxLat + 1e-6; lat += latStep) {
+    latLineValues.push(lat);
+  }
+
+  for (const lat of latLineValues) {
+    const latLngs: import("leaflet").LatLngExpression[] = [];
+    for (let lon = -180; lon <= 180; lon += segmentStep) {
+      latLngs.push([lat, lon]);
+    }
+    L.polyline(latLngs, style).addTo(group);
+    if (shouldLabel(lat, labelEveryLat)) {
+      for (const lon of lonLineValues) {
+        const lonMid = lon + lonStep / 2;
+        makeLabel(lat, lonMid, formatDegreeLabel(lat, "lat"), "lat");
+      }
+    }
+  }
+
+  const latSegmentStarts: number[] = [];
+  for (let lat = latStart; lat + latStep <= maxLat + 1e-6; lat += latStep) {
+    latSegmentStarts.push(lat);
+  }
+
+  for (const lon of lonLineValues) {
+    const latLngs: import("leaflet").LatLngExpression[] = [];
+    for (let lat = minLat; lat <= maxLat + 1e-6; lat += segmentStep) {
+      latLngs.push([lat, lon]);
+    }
+    if (maxLat >= 90 - 1e-6) {
+      latLngs.push([90, lon]);
+    }
+    L.polyline(latLngs, style).addTo(group);
+    if (shouldLabel(lon, labelEveryLon)) {
+      for (const lat of latSegmentStarts) {
+        const latMid = lat + latStep / 2;
+        makeLabel(latMid, lon, formatDegreeLabel(lon, "lon"), "lon");
+      }
+    }
+  }
+
+  return group;
+};
+
+const bringLayerToFront = (layer: OverlayLayer | null, map: import("leaflet").Map) => {
+  if (!layer || !map.hasLayer(layer)) return;
+  if (typeof layer.bringToFront === "function") {
+    layer.bringToFront();
+  }
+};
 
 export default function MapViewer({
   dataset,
@@ -36,7 +188,9 @@ export default function MapViewer({
   const geoTiffLayer = useRef<import("leaflet").Layer | null>(null);
   const baseLayer = useRef<import("leaflet").TileLayer | null>(null);
   const coastLayer = useRef<import("leaflet").TileLayer | null>(null);
-  const graticuleLayer = useRef<import("leaflet").TileLayer | null>(null);
+  const graticuleLayer = useRef<OverlayLayer | null>(null);
+  const showGraticuleRef = useRef(showGraticule);
+  const showCoastlinesRef = useRef(showCoastlines);
   const didInitialView = useRef(false);
   const [cursor, setCursor] = useState<{ lat: number; lon: number } | null>(null);
   const dataBoundsRef = useRef<import("leaflet").LatLngBounds | null>(null);
@@ -46,6 +200,14 @@ export default function MapViewer({
     if (!overlay || !date) return "";
     return buildTileUrl(overlay, date);
   };
+
+  useEffect(() => {
+    showGraticuleRef.current = showGraticule;
+  }, [showGraticule]);
+
+  useEffect(() => {
+    showCoastlinesRef.current = showCoastlines;
+  }, [showCoastlines]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current || !dataset) return;
@@ -86,6 +248,8 @@ export default function MapViewer({
 
     map.createPane("overlay");
     map.getPane("overlay")!.style.zIndex = "600";
+    map.createPane("overlay-label");
+    map.getPane("overlay-label")!.style.zIndex = "650";
 
     const [[x1, y1], [x2, y2]] = dataset.mapConfig.bounds as [number[], number[]];
     // corners (projected)
@@ -124,7 +288,6 @@ export default function MapViewer({
       pane: "overlay",
     });
 
-    const coastSource = dataset.overlays.coastlines;
     coastLayer.current = (leaflet as unknown as typeof import("leaflet")).tileLayer.wms(
       "https://geos.polarview.aq/geoserver/gwc/service/wms",
       {
@@ -141,18 +304,46 @@ export default function MapViewer({
       } as any,
     );
 
-    const graticuleSource = dataset.overlays.graticule;
-    graticuleLayer.current = L.tileLayer(overlayTileUrl(graticuleSource), {
-      maxZoom: dataset.mapConfig.maxZoom,
-      opacity: graticuleSource.opacity,
-      tileSize: 512,
-      attribution: graticuleSource.attribution,
-      className: "graticule-layer",
-      pane: "overlay",
-    });
+    const buildOrUpdateGraticule = () => {
+      const graticuleSource = dataset.overlays.graticule;
+      if (!graticuleSource) return;
+
+      if (graticuleLayer.current) {
+        graticuleLayer.current.removeFrom(map);
+        graticuleLayer.current = null;
+      }
+
+      if (isGraticuleSource(graticuleSource)) {
+        graticuleLayer.current = buildGraticuleLayer(
+          L,
+          graticuleSource,
+          map.getZoom(),
+        );
+      } else if (isTileLayerSource(graticuleSource)) {
+        graticuleLayer.current = L.tileLayer(overlayTileUrl(graticuleSource), {
+          maxZoom: dataset.mapConfig.maxZoom,
+          opacity: graticuleSource.opacity,
+          tileSize: 512,
+          attribution: graticuleSource.attribution,
+          className: "graticule-layer",
+          pane: "overlay",
+        });
+      }
+
+      if (showGraticuleRef.current && graticuleLayer.current) {
+        graticuleLayer.current.addTo(map);
+        bringLayerToFront(graticuleLayer.current, map);
+      }
+
+      if (showCoastlinesRef.current) {
+        bringLayerToFront(coastLayer.current, map);
+      }
+    };
+
+    buildOrUpdateGraticule();
 
     if (showCoastlines) coastLayer.current.addTo(map);
-    if (showGraticule) graticuleLayer.current.addTo(map);
+    if (showGraticuleRef.current && graticuleLayer.current) graticuleLayer.current.addTo(map);
 
     mapInstance.current = map;
 
@@ -225,11 +416,11 @@ export default function MapViewer({
     baseLayer.current.bringToBack();
 
     // 격자/해안선이 켜져있으면 맨 앞으로
-    if (showGraticule && graticuleLayer.current && map.hasLayer(graticuleLayer.current)) {
-      graticuleLayer.current.bringToFront();
+    if (showGraticule) {
+      bringLayerToFront(graticuleLayer.current, map);
     }
-    if (showCoastlines && coastLayer.current && map.hasLayer(coastLayer.current)) {
-      coastLayer.current.bringToFront();
+    if (showCoastlines) {
+      bringLayerToFront(coastLayer.current, map);
     }
   }, [
     dataset,
@@ -303,11 +494,11 @@ export default function MapViewer({
           layer.addTo(map);
   
           // overlay 다시 위로
-          if (showGraticule && graticuleLayer.current && map.hasLayer(graticuleLayer.current)) {
-            graticuleLayer.current.bringToFront();
+          if (showGraticule) {
+            bringLayerToFront(graticuleLayer.current, map);
           }
-          if (showCoastlines && coastLayer.current && map.hasLayer(coastLayer.current)) {
-            coastLayer.current.bringToFront();
+          if (showCoastlines) {
+            bringLayerToFront(coastLayer.current, map);
           }
         } catch (e) {
           console.error("[GeoTIFF] error ❌", e);
@@ -376,11 +567,11 @@ export default function MapViewer({
     layer.bringToBack();
 
     // ✅ 격자/해안선이 켜져있으면 맨 앞으로 다시 올려줌
-    if (showGraticule && graticuleLayer.current && map.hasLayer(graticuleLayer.current)) {
-      graticuleLayer.current.bringToFront();
+    if (showGraticule) {
+      bringLayerToFront(graticuleLayer.current, map);
     }
-    if (showCoastlines && coastLayer.current && map.hasLayer(coastLayer.current)) {
-      coastLayer.current.bringToFront();
+    if (showCoastlines) {
+      bringLayerToFront(coastLayer.current, map);
     }
   }, [baseLayerUrl, activeBaseLayer?.opacity, showGraticule, showCoastlines]);
 
@@ -415,12 +606,14 @@ export default function MapViewer({
       return;
     }
 
-    if (coastLayer.current) {
-      coastLayer.current.setUrl(overlayTileUrl(dataset.overlays.coastlines, activeDate));
+    const coastSource = dataset.overlays.coastlines;
+    if (isTileLayerSource(coastSource) && coastLayer.current) {
+      coastLayer.current.setUrl(overlayTileUrl(coastSource, activeDate));
     }
 
-    if (graticuleLayer.current) {
-      graticuleLayer.current.setUrl(overlayTileUrl(dataset.overlays.graticule, activeDate));
+    const graticuleSource = dataset.overlays.graticule;
+    if (isTileLayerSource(graticuleSource) && graticuleLayer.current?.setUrl) {
+      graticuleLayer.current.setUrl(overlayTileUrl(graticuleSource, activeDate));
     }
   }, [dataset, activeDate]);
 

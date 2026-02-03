@@ -11,6 +11,47 @@ export type TileLayerSource = {
   kind?: "wmts" | "geotiff";
 };
 
+export type GraticuleSource = {
+  id: string;
+  label: string;
+  kind: "graticule";
+  attribution: string;
+  opacity: number;
+  minLat: number;
+  maxLat: number;
+  latStep: number;
+  lonStep: number;
+  segmentStep: number;
+  labelEveryLat?: number;
+  labelEveryLon?: number;
+  labelLon?: number;
+  labelLat?: number;
+  zoomSteps?: GraticuleZoomStep[];
+  color?: string;
+  weight?: number;
+  dashArray?: string;
+};
+
+export type GraticuleZoomStep = {
+  minZoom: number;
+  maxZoom?: number;
+  latStep: number;
+  lonStep: number;
+  segmentStep?: number;
+  labelEveryLat?: number;
+  labelEveryLon?: number;
+};
+
+export type OverlaySource = TileLayerSource | GraticuleSource;
+
+export const isGraticuleSource = (
+  source: OverlaySource | undefined,
+): source is GraticuleSource => !!source && source.kind === "graticule";
+
+export const isTileLayerSource = (
+  source: OverlaySource | undefined,
+): source is TileLayerSource => !!source && "urlTemplate" in source;
+
 export type Snapshot = {
   label: string;
   date: string;
@@ -35,7 +76,7 @@ export type DatasetResponse = {
   };
   baseLayers: Record<string, TileLayerSource>;
   iceSources: Record<string, TileLayerSource>;
-  overlays: Record<string, TileLayerSource>;
+  overlays: Record<string, OverlaySource>;
   snapshots: Snapshot[];
   calendarDays: Array<number | null>;
   defaults: {
@@ -145,24 +186,20 @@ export const dataset: DatasetResponse = {
     },
     graticule: {
       id: "graticule",
-      label: "Graticule",
-      layer: "Graticule",
-      tileMatrixSet: "250m",
-      format: "png",
-      attribution: "NASA GIBS",
-      urlTemplate: gibsStaticUrlTemplate,
-        opacity: 1
+      label: "Graticule (Local)",
+      kind: "graticule",
+      attribution: "Generated locally",
+      opacity: 0.4,
+      minLat: 30,
+      maxLat: 90,
+      latStep: 10,
+      lonStep: 30,
+      segmentStep: 1,
+      labelEveryLat: 10,
+      labelEveryLon: 30,
+      color: "#ffffff",
+      weight: 1
     },
-    graticuleExtended: {
-      id: "graticuleExtended",
-      label: "Graticule Extended",
-      layer: "Graticule_Extended",
-      tileMatrixSet: "1.5km",
-      format: "png",
-      attribution: "NASA GIBS",
-      urlTemplate: gibsStaticUrlTemplate,
-      opacity: 0.6
-    }
   },
   snapshots: [
     {
