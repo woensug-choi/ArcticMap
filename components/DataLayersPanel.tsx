@@ -100,7 +100,7 @@ export default function DataLayersPanel({
             aria-label={t("iceConcentration")}
             className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200"
           >
-            <option value="">Select data</option>
+            <option value="">{t("selectData")}</option>
             {Object.entries(dataset?.iceSources ?? {}).map(([key, source]) => (
               <option key={key} value={key}>
                 {source.label}
@@ -133,7 +133,7 @@ export default function DataLayersPanel({
           aria-label={t("baseMap")}
           className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200"
           >
-              <option value="">Select basemap</option>
+              <option value="">{t("selectData")}</option>
               
               {Object.entries(dataset?.baseLayers ?? {}).map(([key, layer]) => (
                 <option key={key} value={key}>
@@ -144,7 +144,7 @@ export default function DataLayersPanel({
                 
                 <p className="text-[11px] text-slate-500">
                   {t("active")}:{" "}
-                  {activeBaseLayer ? activeBaseLayer.label : "Select basemap"}
+                  {activeBaseLayer ? activeBaseLayer.label : <span>{t("selectBasemapToViewInfo")}</span>}
                   </p>
 
         </div>

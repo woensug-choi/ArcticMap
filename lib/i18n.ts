@@ -37,17 +37,18 @@ export const messages = {
     sampleUrlLabel: "Sample URL",
     attributionLabel: "Attribution",
     selectDataToViewInfo: "Select data to view info",
-    selectBasemapToViewInfo: "Select basemap to view info",
-    weekdaysShort: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
-    
-  
+    selectBasemapToViewInfo: "Select Basemap to view info",
+    weekdaysShort: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    notSelected: "Not Selected",
+    selectData: "Click to Select Data",
+
   },
   ko: {
     appName: "Arctic Ice Viewer",
     appTitle: "북극 해빙 농도 브라우저",
     sourceLabel: "자료",
     projectionLabel: "투영",
-    selectedDay: "선택한 날짜",
+    selectedDay: "현재 날짜",
     loading: "불러오는 중...",
     dataAndLayers: "데이터 및 레이어",
     iceConcentration: "해빙 농도",
@@ -75,7 +76,9 @@ export const messages = {
     attributionLabel: "출처",
     selectDataToViewInfo: "정보를 보려면 데이터를 선택하세요",
     selectBasemapToViewInfo: "정보를 보려면 베이스맵을 선택하세요",
-    weekdaysShort: ["일", "월", "화", "수", "목", "금", "토"]
+    weekdaysShort: ["일", "월", "화", "수", "목", "금", "토"],
+    notSelected: "선택되지 않음",
+    selectData: "데이터 선택",
     
   },
   ja: {
@@ -109,10 +112,11 @@ export const messages = {
     layerIdLabel: "レイヤーID",
     sampleUrlLabel: "サンプルURL",
     attributionLabel: "帰属",
-    selectDataToViewInfo: "Select data to view info",
-    selectBasemapToViewInfo: "Select basemap to view info",
-    weekdaysShort: ["日", "月", "火", "水", "木", "金", "土"]
-    
+    selectDataToViewInfo: "情報を表示するデータを選択してください",
+    selectBasemapToViewInfo: "情報を表示するベースマップを選択してください",
+    weekdaysShort: ["日", "月", "火", "水", "木", "金", "土"],
+    notSelected: "未選択",
+    selectData: "データを選択",
     
   },
   zh: {
@@ -146,10 +150,11 @@ export const messages = {
     layerIdLabel: "图层ID",
     sampleUrlLabel: "示例URL",
     attributionLabel: "署名",
-    selectDataToViewInfo: "Select data to view info",
-    selectBasemapToViewInfo: "Select basemap to view info",
-    weekdaysShort: ["日", "一", "二", "三", "四", "五", "六"]
-    
+    selectDataToViewInfo: "请选择数据以查看信息",
+    selectBasemapToViewInfo: "请选择底图以查看信息",
+    weekdaysShort: ["日", "一", "二", "三", "四", "五", "六"],
+    notSelected: "未选择",
+    selectData: "选择数据"
     
   },
   fr: {
@@ -183,10 +188,11 @@ export const messages = {
     layerIdLabel: "ID de couche",
     sampleUrlLabel: "URL d’exemple",
     attributionLabel: "Attribution",
-    selectDataToViewInfo: "Select data to view info",
-    selectBasemapToViewInfo: "Select basemap to view info",
-    weekdaysShort: ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"]
-  
+    selectDataToViewInfo: "Sélectionnez les données pour afficher les informations",
+    selectBasemapToViewInfo: "Sélectionnez le fond de carte pour afficher les informations",
+    weekdaysShort: ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"],
+    notSelected: "Non sélectionné",
+    selectData: "Sélectionner les données"
     
   },
   es: {
@@ -220,10 +226,11 @@ export const messages = {
     layerIdLabel: "ID de capa",
     sampleUrlLabel: "URL de muestra",
     attributionLabel: "Atribución",
-    selectDataToViewInfo: "Select data to view info",
-    selectBasemapToViewInfo: "Select basemap to view info",
-    weekdaysShort: ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
-    
+    selectDataToViewInfo: "Selecciona los datos para ver la información",
+    selectBasemapToViewInfo: "Selecciona el mapa base para ver la información",
+    weekdaysShort: ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"],
+    notSelected: "No seleccionado",
+    selectData: "Seleccionar datos"
  
   }
 } as const;
