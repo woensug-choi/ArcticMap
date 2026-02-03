@@ -40,6 +40,9 @@ export type GraticuleZoomStep = {
   segmentStep?: number;
   labelEveryLat?: number;
   labelEveryLon?: number;
+  dashArray?: string;
+  opacity?: number;
+  weight?: number;
 };
 
 export type OverlaySource = TileLayerSource | GraticuleSource;
@@ -189,7 +192,7 @@ export const dataset: DatasetResponse = {
       label: "Graticule (Local)",
       kind: "graticule",
       attribution: "Generated locally",
-      opacity: 0.4,
+      opacity: 0.3,
       minLat: 30,
       maxLat: 90,
       latStep: 10,
@@ -198,7 +201,45 @@ export const dataset: DatasetResponse = {
       labelEveryLat: 10,
       labelEveryLon: 30,
       color: "#ffffff",
-      weight: 1
+      weight: 1,
+      zoomSteps: [
+        {
+          minZoom: 5,
+          latStep: 2,
+          lonStep: 15,
+          segmentStep: 1,
+          labelEveryLat: 2,
+          labelEveryLon: 15,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 4,
+          latStep: 2,
+          lonStep: 15,
+          segmentStep: 1,
+          labelEveryLat: 2,
+          labelEveryLon: 15,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 3,
+          latStep: 2.5,
+          lonStep: 20,
+          segmentStep: 1,
+          labelEveryLat: 2.5,
+          labelEveryLon: 20,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 2,
+          latStep: 5,
+          lonStep: 20,
+          segmentStep: 1,
+          labelEveryLat: 5,
+          labelEveryLon: 20,
+          // dashArray: "2,4"
+        }
+      ]
     },
   },
   snapshots: [

@@ -40,8 +40,20 @@ const resolveGraticuleSettings = (source: GraticuleSource, zoom: number) => {
   const segmentStep = match?.segmentStep ?? source.segmentStep;
   const labelEveryLat = match?.labelEveryLat ?? source.labelEveryLat ?? latStep;
   const labelEveryLon = match?.labelEveryLon ?? source.labelEveryLon ?? lonStep;
+  const dashArray = match?.dashArray ?? source.dashArray;
+  const opacity = match?.opacity ?? source.opacity;
+  const weight = match?.weight ?? source.weight;
 
-  return { latStep, lonStep, segmentStep, labelEveryLat, labelEveryLon };
+  return {
+    latStep,
+    lonStep,
+    segmentStep,
+    labelEveryLat,
+    labelEveryLon,
+    dashArray,
+    opacity,
+    weight,
+  };
 };
 
 const shouldLabel = (value: number, every: number) => {
@@ -81,8 +93,8 @@ const buildGraticuleLayer = (
   const latStep = Math.max(0.1, Math.abs(resolved.latStep));
   const lonStep = Math.max(0.1, Math.abs(resolved.lonStep));
   const segmentStep = Math.max(0.1, Math.abs(resolved.segmentStep));
-  const labelEveryLat = Math.max(0.1, Math.abs(resolved.labelEveryLat));
-  const labelEveryLon = Math.max(0.1, Math.abs(resolved.labelEveryLon));
+  const labelEveryLat = resolved.labelEveryLat;
+  const labelEveryLon = resolved.labelEveryLon;
 
   const minLat = clamp(source.minLat, -89.999, 89.999);
   const maxLat = clamp(source.maxLat, minLat, 90);
@@ -90,15 +102,15 @@ const buildGraticuleLayer = (
 
   const style: import("leaflet").PolylineOptions = {
     color: source.color ?? "#8fa7e8",
-    weight: source.weight ?? 1,
-    opacity: source.opacity ?? 0.7,
-    dashArray: source.dashArray,
+    weight: resolved.weight ?? 1,
+    opacity: resolved.opacity ?? 0.7,
+    dashArray: resolved.dashArray,
     interactive: false,
     pane: "overlay",
   };
 
   const group = L.featureGroup();
-  const zoomOut = zoom <= 1;
+  const zoomOut = zoom <= 2;
   const makeLabel = (lat: number, lon: number, text: string, kind: "lat" | "lon") => {
     L.marker([lat, lon], {
       icon: L.divIcon({
@@ -340,6 +352,14 @@ export default function MapViewer({
       }
     };
 
+    const handleZoomEnd = () => {
+      const graticuleSource = dataset.overlays.graticule;
+      if (!isGraticuleSource(graticuleSource)) return;
+      buildOrUpdateGraticule();
+    };
+
+    map.on("zoomend", handleZoomEnd);
+
     buildOrUpdateGraticule();
 
     if (showCoastlines) coastLayer.current.addTo(map);
@@ -376,6 +396,7 @@ export default function MapViewer({
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       map.off("mousemove", onMouseMove);
+      map.off("zoomend", handleZoomEnd);
       mapInstance.current?.remove();
       mapInstance.current = null;
       didInitialView.current = false;
