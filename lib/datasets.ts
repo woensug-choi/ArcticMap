@@ -11,6 +11,52 @@ export type TileLayerSource = {
   kind?: "wmts" | "geotiff";
 };
 
+export type GraticuleSource = {
+  id: string;
+  label: string;
+  kind: "graticule";
+  attribution: string;
+  opacity: number;
+  minLat: number;
+  maxLat: number;
+  latStep: number;
+  lonStep: number;
+  segmentStep: number;
+  labelEveryLat?: number;
+  labelEveryLon?: number;
+  labelLon?: number;
+  labelLat?: number;
+  poleGap?: number;
+  zoomSteps?: GraticuleZoomStep[];
+  color?: string;
+  weight?: number;
+  dashArray?: string;
+};
+
+export type GraticuleZoomStep = {
+  minZoom: number;
+  maxZoom?: number;
+  latStep: number;
+  lonStep: number;
+  segmentStep?: number;
+  labelEveryLat?: number;
+  labelEveryLon?: number;
+  dashArray?: string;
+  opacity?: number;
+  weight?: number;
+  poleGap?: number;
+};
+
+export type OverlaySource = TileLayerSource | GraticuleSource;
+
+export const isGraticuleSource = (
+  source: OverlaySource | undefined,
+): source is GraticuleSource => !!source && source.kind === "graticule";
+
+export const isTileLayerSource = (
+  source: OverlaySource | undefined,
+): source is TileLayerSource => !!source && "urlTemplate" in source;
+
 export type Snapshot = {
   label: string;
   date: string;
@@ -35,7 +81,7 @@ export type DatasetResponse = {
   };
   baseLayers: Record<string, TileLayerSource>;
   iceSources: Record<string, TileLayerSource>;
-  overlays: Record<string, TileLayerSource>;
+  overlays: Record<string, OverlaySource>;
   snapshots: Snapshot[];
   calendarDays: Array<number | null>;
   defaults: {
@@ -145,24 +191,73 @@ export const dataset: DatasetResponse = {
     },
     graticule: {
       id: "graticule",
-      label: "Graticule",
-      layer: "Graticule",
-      tileMatrixSet: "250m",
-      format: "png",
-      attribution: "NASA GIBS",
-      urlTemplate: gibsStaticUrlTemplate,
-        opacity: 1
+      label: "Graticule (Local)",
+      kind: "graticule",
+      attribution: "Generated locally",
+      opacity: 0.3,
+      minLat: 30,
+      maxLat: 90,
+      latStep: 10,
+      lonStep: 30,
+      segmentStep: 1,
+      labelEveryLat: 10,
+      labelEveryLon: 30,
+      poleGap: 0.08,
+      color: "#ffffff",
+      weight: 1,
+      zoomSteps: [
+        {
+          minZoom: 5,
+          latStep: 2,
+          lonStep: 15,
+          segmentStep: 1,
+          labelEveryLat: 2,
+          labelEveryLon: 15,
+          poleGap: 0.002,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 4,
+          latStep: 2,
+          lonStep: 15,
+          segmentStep: 1,
+          labelEveryLat: 2,
+          labelEveryLon: 15,
+          poleGap: 0.005,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 3,
+          latStep: 2.5,
+          lonStep: 20,
+          segmentStep: 1,
+          labelEveryLat: 2.5,
+          labelEveryLon: 20,
+          poleGap: 0.01,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 2,
+          latStep: 5,
+          lonStep: 20,
+          segmentStep: 1,
+          labelEveryLat: 5,
+          labelEveryLon: 20,
+          poleGap: 0.02,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 1,
+          latStep: 10,
+          lonStep: 30,
+          segmentStep: 1,
+          labelEveryLat: 10,
+          labelEveryLon: 30,
+          poleGap: 0.05,
+          // dashArray: "2,4"
+        }
+      ]
     },
-    graticuleExtended: {
-      id: "graticuleExtended",
-      label: "Graticule Extended",
-      layer: "Graticule_Extended",
-      tileMatrixSet: "1.5km",
-      format: "png",
-      attribution: "NASA GIBS",
-      urlTemplate: gibsStaticUrlTemplate,
-      opacity: 0.6
-    }
   },
   snapshots: [
     {
