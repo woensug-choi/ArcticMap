@@ -43,6 +43,7 @@ const resolveGraticuleSettings = (source: GraticuleSource, zoom: number) => {
   const dashArray = match?.dashArray ?? source.dashArray;
   const opacity = match?.opacity ?? source.opacity;
   const weight = match?.weight ?? source.weight;
+  const poleGap = match?.poleGap ?? source.poleGap;
 
   return {
     latStep,
@@ -53,6 +54,7 @@ const resolveGraticuleSettings = (source: GraticuleSource, zoom: number) => {
     dashArray,
     opacity,
     weight,
+    poleGap,
   };
 };
 
@@ -96,9 +98,11 @@ const buildGraticuleLayer = (
   const labelEveryLat = resolved.labelEveryLat;
   const labelEveryLon = resolved.labelEveryLon;
 
+  // Avoid drawing exactly at the north pole to prevent a bright dot from intersecting lines.
+  const poleGap = Math.max(0, Math.min(5, Math.abs(resolved.poleGap ?? 0.005)));
   const minLat = clamp(source.minLat, -89.999, 89.999);
-  const maxLat = clamp(source.maxLat, minLat, 90);
-  const parallelMaxLat = Math.min(maxLat, 89.999);
+  const maxLat = clamp(source.maxLat, minLat, 90 - poleGap);
+  const parallelMaxLat = maxLat;
 
   const style: import("leaflet").PolylineOptions = {
     color: source.color ?? "#8fa7e8",
@@ -162,8 +166,9 @@ const buildGraticuleLayer = (
     for (let lat = minLat; lat <= maxLat + 1e-6; lat += segmentStep) {
       latLngs.push([lat, lon]);
     }
-    if (maxLat >= 90 - 1e-6) {
-      latLngs.push([90, lon]);
+    const lastLat = latLngs.at(-1);
+    if (Array.isArray(lastLat) && lastLat[0] < maxLat - 1e-6) {
+      latLngs.push([maxLat, lon]);
     }
     L.polyline(latLngs, style).addTo(group);
     if (shouldLabel(lon, labelEveryLon)) {

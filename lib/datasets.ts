@@ -26,6 +26,7 @@ export type GraticuleSource = {
   labelEveryLon?: number;
   labelLon?: number;
   labelLat?: number;
+  poleGap?: number;
   zoomSteps?: GraticuleZoomStep[];
   color?: string;
   weight?: number;
@@ -43,6 +44,7 @@ export type GraticuleZoomStep = {
   dashArray?: string;
   opacity?: number;
   weight?: number;
+  poleGap?: number;
 };
 
 export type OverlaySource = TileLayerSource | GraticuleSource;
@@ -200,6 +202,7 @@ export const dataset: DatasetResponse = {
       segmentStep: 1,
       labelEveryLat: 10,
       labelEveryLon: 30,
+      poleGap: 0.08,
       color: "#ffffff",
       weight: 1,
       zoomSteps: [
@@ -210,6 +213,7 @@ export const dataset: DatasetResponse = {
           segmentStep: 1,
           labelEveryLat: 2,
           labelEveryLon: 15,
+          poleGap: 0.002,
           // dashArray: "2,4"
         },
         {
@@ -219,6 +223,7 @@ export const dataset: DatasetResponse = {
           segmentStep: 1,
           labelEveryLat: 2,
           labelEveryLon: 15,
+          poleGap: 0.005,
           // dashArray: "2,4"
         },
         {
@@ -228,6 +233,7 @@ export const dataset: DatasetResponse = {
           segmentStep: 1,
           labelEveryLat: 2.5,
           labelEveryLon: 20,
+          poleGap: 0.01,
           // dashArray: "2,4"
         },
         {
@@ -237,6 +243,17 @@ export const dataset: DatasetResponse = {
           segmentStep: 1,
           labelEveryLat: 5,
           labelEveryLon: 20,
+          poleGap: 0.02,
+          // dashArray: "2,4"
+        },
+        {
+          minZoom: 1,
+          latStep: 10,
+          lonStep: 30,
+          segmentStep: 1,
+          labelEveryLat: 10,
+          labelEveryLon: 30,
+          poleGap: 0.05,
           // dashArray: "2,4"
         }
       ]
