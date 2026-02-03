@@ -36,7 +36,11 @@ export const messages = {
     layerIdLabel: "Layer ID",
     sampleUrlLabel: "Sample URL",
     attributionLabel: "Attribution",
+    selectDataToViewInfo: "Select data to view info",
+    selectBasemapToViewInfo: "Select basemap to view info",
     weekdaysShort: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+    
+  
   },
   ko: {
     appName: "Arctic Ice Viewer",
@@ -69,7 +73,10 @@ export const messages = {
     layerIdLabel: "레이어 ID",
     sampleUrlLabel: "샘플 URL",
     attributionLabel: "출처",
+    selectDataToViewInfo: "정보를 보려면 데이터를 선택하세요",
+    selectBasemapToViewInfo: "정보를 보려면 베이스맵을 선택하세요",
     weekdaysShort: ["일", "월", "화", "수", "목", "금", "토"]
+    
   },
   ja: {
     appName: "Arctic Ice Viewer",
@@ -102,7 +109,11 @@ export const messages = {
     layerIdLabel: "レイヤーID",
     sampleUrlLabel: "サンプルURL",
     attributionLabel: "帰属",
+    selectDataToViewInfo: "Select data to view info",
+    selectBasemapToViewInfo: "Select basemap to view info",
     weekdaysShort: ["日", "月", "火", "水", "木", "金", "土"]
+    
+    
   },
   zh: {
     appName: "Arctic Ice Viewer",
@@ -135,7 +146,11 @@ export const messages = {
     layerIdLabel: "图层ID",
     sampleUrlLabel: "示例URL",
     attributionLabel: "署名",
+    selectDataToViewInfo: "Select data to view info",
+    selectBasemapToViewInfo: "Select basemap to view info",
     weekdaysShort: ["日", "一", "二", "三", "四", "五", "六"]
+    
+    
   },
   fr: {
     appName: "Arctic Ice Viewer",
@@ -168,7 +183,11 @@ export const messages = {
     layerIdLabel: "ID de couche",
     sampleUrlLabel: "URL d’exemple",
     attributionLabel: "Attribution",
+    selectDataToViewInfo: "Select data to view info",
+    selectBasemapToViewInfo: "Select basemap to view info",
     weekdaysShort: ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"]
+  
+    
   },
   es: {
     appName: "Arctic Ice Viewer",
@@ -201,7 +220,11 @@ export const messages = {
     layerIdLabel: "ID de capa",
     sampleUrlLabel: "URL de muestra",
     attributionLabel: "Atribución",
+    selectDataToViewInfo: "Select data to view info",
+    selectBasemapToViewInfo: "Select basemap to view info",
     weekdaysShort: ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"]
+    
+ 
   }
 } as const;
 

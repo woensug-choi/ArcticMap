@@ -123,7 +123,9 @@ console.log("center", dataset.mapConfig.center, "maxBounds", dataset.mapConfig.m
     opacity: activeBaseLayer?.opacity ?? 0.9,
     tileSize: 512,
     attribution: activeBaseLayer?.attribution,
-  }).addTo(map);
+  });
+  // ⚠️ addTo(map) 하지 말기! (url 있을 때만 붙일 거임)
+  
 
   const coastSource = dataset.overlays.coastlines;
   coastLayer.current = (leaflet as unknown as typeof import("leaflet")).tileLayer.wms(
@@ -195,13 +197,26 @@ return () => {
 }, [dataset]);
 
 
- useEffect(() => {
+useEffect(() => {
   const map = mapInstance.current;
-  if (!map || !dataset || !iceLayerUrl) return;
+  if (!map || !dataset) return;
 
   const L = leaflet as unknown as typeof import("leaflet");
 
-  // ✅ abort + cleanup
+  // ✅ 1) Select data 상태면: 기존 얼음 레이어/GeoTIFF 레이어 제거하고 끝
+  if (!iceLayerUrl) {
+    if (iceLayer.current) {
+      iceLayer.current.removeFrom(map);
+      iceLayer.current = null;
+    }
+    if (geoTiffLayer.current) {
+      geoTiffLayer.current.removeFrom(map);
+      geoTiffLayer.current = null;
+    }
+    return;
+  }
+
+  // ✅ abort + cleanup (기존 코드 유지)
   const controller = new AbortController();
   let cancelled = false;
 
@@ -216,58 +231,46 @@ return () => {
     }
   };
 
+  // ---- 이하부터는 네 기존 코드(GeoTIFF / tile 처리) 그대로 두면 됨 ----
   if (activeIceSource?.kind === "geotiff") {
     cleanup();
-  
+
     (async () => {
       try {
-        if (!iceLayerUrl) return;
-  
         const proxied = `/api/proxy?url=${encodeURIComponent(iceLayerUrl)}`;
-        console.log("[GeoTIFF] FETCH VIA PROXY:", proxied);
-  
         const res = await fetch(proxied, { signal: controller.signal });
-        if (!res.ok) {
-          throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
-        }
-  
+        if (!res.ok) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
+
         const buf = await res.arrayBuffer();
-  
+
         const { default: parseGeoraster } = await import("georaster");
-        const { default: GeoRasterLayer } = await import(
-          "georaster-layer-for-leaflet"
-        );
-  
+        const { default: GeoRasterLayer } = await import("georaster-layer-for-leaflet");
+
         if (cancelled) return;
-  
+
         const georaster = await parseGeoraster(buf);
-        
         if (cancelled) return;
-  
+
         const layer = new GeoRasterLayer({
           georaster,
           opacity: activeIceSource.opacity ?? 0.7,
         });
-  
+
         geoTiffLayer.current = layer;
         layer.addTo(map);
-  
-        console.log("[GeoTIFF] added ✅");
       } catch (e) {
-
         console.error("[GeoTIFF] error ❌", e);
       }
     })();
-  
+
     return () => {
       cancelled = true;
       controller.abort();
       cleanup();
     };
   }
-  
 
-  // ✅ tile layer 모드
+  // ✅ tile layer 모드 (기존 유지)
   if (geoTiffLayer.current) {
     geoTiffLayer.current.removeFrom(map);
     geoTiffLayer.current = null;
@@ -282,25 +285,54 @@ return () => {
     }).addTo(map);
   } else {
     iceLayer.current.setUrl(iceLayerUrl);
-    if (activeIceSource?.opacity !== undefined) {
-      iceLayer.current.setOpacity(activeIceSource.opacity);
-    }
+    if (activeIceSource?.opacity !== undefined) iceLayer.current.setOpacity(activeIceSource.opacity);
   }
 
   return () => {
     controller.abort();
   };
-}, [dataset, iceLayerUrl, activeIceSource?.kind, activeIceSource?.opacity, activeIceSource?.attribution]);
+}, [
+  dataset,
+  iceLayerUrl,
+  activeIceSource?.kind,
+  activeIceSource?.opacity,
+  activeIceSource?.attribution,
+]);
 
 
-  useEffect(() => {
-    if (baseLayer.current && baseLayerUrl) {
-      baseLayer.current.setUrl(baseLayerUrl);
-      if (activeBaseLayer) {
-        baseLayer.current.setOpacity(activeBaseLayer.opacity);
-      }
-    }
-  }, [baseLayerUrl, activeBaseLayer]);
+
+useEffect(() => {
+  const map = mapInstance.current;
+  const layer = baseLayer.current;
+  if (!map || !layer) return;
+
+  if (!baseLayerUrl) {
+    if (map.hasLayer(layer)) layer.removeFrom(map);
+    layer.setUrl("");
+    return;
+  }
+
+  if (!map.hasLayer(layer)) layer.addTo(map);
+
+  layer.setUrl(baseLayerUrl);
+
+  if (activeBaseLayer?.opacity !== undefined) {
+    layer.setOpacity(activeBaseLayer.opacity);
+  }
+
+  // ✅ 핵심: basemap은 무조건 맨 뒤로
+  layer.bringToBack();
+
+  // ✅ 격자/해안선이 켜져있으면 맨 앞으로 다시 올려줌
+  if (showGraticule && graticuleLayer.current && map.hasLayer(graticuleLayer.current)) {
+    graticuleLayer.current.bringToFront();
+  }
+  if (showCoastlines && coastLayer.current && map.hasLayer(coastLayer.current)) {
+    coastLayer.current.bringToFront();
+  }
+}, [baseLayerUrl, activeBaseLayer?.opacity, showGraticule, showCoastlines]);
+
+
 
   useEffect(() => {
     if (!activeIceSource) return;
@@ -371,10 +403,21 @@ return () => {
   )}
 </div>
 
-      <div className="absolute left-4 top-4 rounded-md bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300">
-        <div>Base map: {activeBaseLayer?.label ?? "Loading..."}</div>
-        <div>Ice layer: {activeIceSource?.label ?? "Loading..."}</div>
-      </div>
+<div className="absolute left-4 top-4 rounded-md bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300 pointer-events-none">
+  <div>
+    Base map:{" "}
+    {activeBaseLayer
+      ? activeBaseLayer.label
+      : "Select basemap to view info"}
+  </div>
+  <div>
+    Ice layer:{" "}
+    {activeIceSource
+      ? activeIceSource.label
+      : "Select data to view info"}
+  </div>
+</div>
+
     </Card>
   );
 }
