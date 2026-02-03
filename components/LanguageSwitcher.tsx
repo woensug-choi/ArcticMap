@@ -2,6 +2,14 @@
 
 import { useLanguage } from "@/components/LanguageProvider";
 import { supportedLocales } from "@/lib/i18n";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const localeLabels: Record<string, string> = {
   en: "English",
@@ -17,19 +25,24 @@ export default function LanguageSwitcher() {
 
   return (
     <label className="flex items-center gap-2 text-xs text-slate-400">
-      <span>{t("languageLabel")}</span>
-      <select
-        value={locale}
-        onChange={(event) => setLocale(event.target.value as typeof locale)}
-        className="rounded-md border border-slate-700 bg-slate-900/60 px-2 py-1 text-xs text-slate-200"
-        aria-label={t("languageLabel")}
-      >
-        {supportedLocales.map((item) => (
-          <option key={item} value={item}>
-            {localeLabels[item] ?? item}
-          </option>
-        ))}
-      </select>
+      <span className="w-full">{t("languageLabel")}</span>
+      <Select value={locale} onValueChange={(value) => setLocale(value as typeof locale)}>
+        <SelectTrigger
+          aria-label={t("languageLabel")}
+          className="border-slate-700 bg-slate-900/60 text-xs text-slate-200"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="border-slate-700 bg-slate-900 text-xs text-slate-200">
+          <SelectGroup>
+            {supportedLocales.map((item) => (
+              <SelectItem key={item} value={item}>
+                {localeLabels[item] ?? item}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </label>
   );
 }
