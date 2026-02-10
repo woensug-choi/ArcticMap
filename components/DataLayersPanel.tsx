@@ -7,13 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { DatasetResponse, OverlaySource, TileLayerSource } from "@/lib/datasets";
 import { buildGeoTiffUrl, buildTileUrl, isGraticuleSource } from "@/lib/datasets";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DataLayersPanelProps {
   dataset: DatasetResponse | null;
   iceSourceKey: string;
   setIceSourceKey: Dispatch<SetStateAction<string>>;
   baseLayerKey: string;
-  setBaseLayerKey: Dispatch<SetStateAction<string>>;  
+  setBaseLayerKey: Dispatch<SetStateAction<string>>;
   showCoastlines: boolean;
   setShowCoastlines: Dispatch<SetStateAction<boolean>>;
   showGraticule: boolean;
@@ -61,7 +69,7 @@ export default function DataLayersPanel({
       </div>
       <div className="mt-2 text-[11px] text-slate-400">
         <p>
-          {t("sampleUrlLabel")}: {" "}
+          {t("sampleUrlLabel")}:{" "}
           <span className="break-all text-slate-300">
             {source.kind === "geotiff"
               ? buildGeoTiffUrl(source, sampleDate)
@@ -125,59 +133,88 @@ export default function DataLayersPanel({
       <CardContent className="space-y-3 text-xs text-slate-400">
         <div className="space-y-2">
           <p className="text-slate-300">{t("iceConcentration")}</p>
-          <select
-            value={iceSourceKey}
-            onChange={(event) => setIceSourceKey(event.target.value)}
-            aria-label={t("iceConcentration")}
-            className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200"
+          <Select
+            value={iceSourceKey || "__none__"}
+            onValueChange={(value) =>
+              setIceSourceKey(value === "__none__" ? "" : value)
+            }
           >
-            <option value="">{t("selectData")}</option>
-            {Object.entries(dataset?.iceSources ?? {}).map(([key, source]) => (
-              <option key={key} value={key}>
-                {source.label}
-              </option>
-            ))}
-          </select>
-          
+            <SelectTrigger
+              aria-label={t("iceConcentration")}
+              className="w-full border-slate-700 bg-slate-900/60 text-xs text-slate-200"
+            >
+              <SelectValue placeholder={t("selectData")} />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 text-slate-200">
+              <SelectGroup>
+                <SelectItem value="__none__" className="text-xs">
+                  {t("selectData")}
+                </SelectItem>
+                {Object.entries(dataset?.iceSources ?? {}).map(
+                  ([key, source]) => (
+                    <SelectItem key={key} value={key} className="text-xs">
+                      {source.label}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
           <div className="text-[11px] text-slate-500">
-            {t("info")}:{" "}            
+            {t("info")}:{" "}
             {activeIceSource?.infoUrl ? (
               <a
-              href={activeIceSource.infoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sky-300 underline decoration-slate-600 underline-offset-2"
+                href={activeIceSource.infoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sky-300 underline decoration-slate-600 underline-offset-2"
               >
                 {activeIceSource.label}
-                </a>
-                ) : (
-                  <span>{t("selectDataToViewInfo")}</span>
-                )}
-
+              </a>
+            ) : (
+              <span>{t("selectDataToViewInfo")}</span>
+            )}
           </div>
         </div>
         <div className="space-y-2">
           <p className="text-slate-300">{t("baseMap")}</p>
-          <select 
-          value={baseLayerKey}
-          onChange={(event) => setBaseLayerKey(event.target.value)}
-          aria-label={t("baseMap")}
-          className="w-full rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200"
+          <Select
+            value={baseLayerKey || "__none__"}
+            onValueChange={(value) =>
+              setBaseLayerKey(value === "__none__" ? "" : value)
+            }
           >
-              <option value="">{t("selectData")}</option>
-              
-              {Object.entries(dataset?.baseLayers ?? {}).map(([key, layer]) => (
-                <option key={key} value={key}>
-                  {layer.label}
-                  </option>
-                ))}
-                </select>
-                
-                <p className="text-[11px] text-slate-500">
-                  {t("active")}:{" "}
-                  {activeBaseLayer ? activeBaseLayer.label : <span>{t("selectBasemapToViewInfo")}</span>}
-                  </p>
+            <SelectTrigger
+              aria-label={t("baseMap")}
+              className="w-full border-slate-700 bg-slate-900/60 text-xs text-slate-200"
+            >
+              <SelectValue placeholder={t("selectData")} />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 text-slate-200">
+              <SelectGroup>
+                <SelectItem value="__none__" className="text-xs">
+                  {t("selectData")}
+                </SelectItem>
+                {Object.entries(dataset?.baseLayers ?? {}).map(
+                  ([key, layer]) => (
+                    <SelectItem key={key} value={key} className="text-xs">
+                      {layer.label}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
 
+          <p className="text-[11px] text-slate-500">
+            {t("active")}:{" "}
+            {activeBaseLayer ? (
+              activeBaseLayer.label
+            ) : (
+              <span>{t("selectBasemapToViewInfo")}</span>
+            )}
+          </p>
         </div>
         <label className="flex items-center gap-2 text-xs text-slate-300">
           <input
@@ -222,8 +259,9 @@ export default function DataLayersPanel({
             </CardHeader>
             <CardContent className="h-full overflow-y-auto space-y-6 text-xs text-slate-300 scrollbar-dark">
               <div>
-              <p className="text-[11px] text-slate-500">
-                {t("active")}: {activeBaseLayer ? activeBaseLayer.label : "None"}
+                <p className="text-[11px] text-slate-500">
+                  {t("active")}:{" "}
+                  {activeBaseLayer ? activeBaseLayer.label : "None"}
                 </p>
 
                 <ul className="mt-2 space-y-3">
