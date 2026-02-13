@@ -25,7 +25,7 @@ export default function HomePage() {
     () => dataset.defaults.defaultDate ?? dataset.snapshots?.[0]?.date ?? ""
   );
   const [isPlaying, setIsPlaying] = useState(false); // isplaying: 재생 중인지 여부 
-  const [playbackSpeed, setPlaybackSpeed] = useState(1000); //palyback speed: 날짜 넘어가는 속도 ㅡ> 날짜 애니메이션 플레이어 
+  const [playbackSpeed, setPlaybackSpeed] = useState(3500); //palyback speed: 날짜 넘어가는 속도 ㅡ> 날짜 애니메이션 플레이어 
   const [baseLayerKey, setBaseLayerKey] = useState<string>(
     () => dataset.defaults.baseLayerKey
   );

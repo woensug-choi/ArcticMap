@@ -67,7 +67,7 @@ export const dataset: DatasetResponse = {
     projection: "EPSG:3413",
     proj4:
       "+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs",
-    resolutions: [8192, 4096, 2048, 1024, 512, 256],
+    resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64],
     origin: [-4194304, 4194304],
     bounds: [
       [-4194304, -4194304],
@@ -76,7 +76,7 @@ export const dataset: DatasetResponse = {
     center: [90, 0],
     initialZoom: 1,
     minZoom: 0,
-    maxZoom: 5,
+    maxZoom: 7,
     maxBounds: [
       [50, -180],
       [90, 180]

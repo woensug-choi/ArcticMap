@@ -257,10 +257,10 @@ export default function CalendarSelector({
             </div>
             <Slider
               value={[playbackSpeed]}
-              min={500}
-              max={2000}
-              step={100}
-              onValueChange={(value) => setPlaybackSpeed(value[0] ?? 500)}
+              min={3500}
+              max={5000}
+              step={250}
+              onValueChange={(value) => setPlaybackSpeed(value[0] ?? 3500)}
               aria-label={t("animationSpeed")}
             />
           </div>

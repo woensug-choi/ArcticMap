@@ -225,6 +225,13 @@ h6 {
   top: 0.75rem;
 }
 
+.ol-attribution {
+  right: 0.75rem;
+  left: auto;
+  bottom: 2.75rem;
+  z-index: 1001;
+}
+
 .ol-layer.graticule-layer,
 .ol-layer.graticule-layer canvas,
 .ol-layer.graticule-layer img,
