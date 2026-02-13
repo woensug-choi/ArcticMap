@@ -1,4 +1,4 @@
-import "leaflet/dist/leaflet.css";
+import "ol/ol.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import LanguageProvider from "@/components/LanguageProvider";

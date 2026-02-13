@@ -3,12 +3,18 @@ export type TileLayerSource = {
   label: string;
   layer: string;
   tileMatrixSet: string;
-  format: "jpg" | "jpeg" | "png" | "tif";
+  format: "jpg" | "jpeg" | "png" | "tif" | "nc";
   attribution: string;
   infoUrl?: string;
   urlTemplate: string;
   opacity: number;
-  kind?: "wmts" | "geotiff";
+  kind?: "wmts" | "geotiff" | "wms";
+  bounds?: [[number, number], [number, number]];
+  wmsCrs?: string[];
+  wmsTime?: boolean;
+  wmsStyles?: string[];
+  wmsDefaultStyle?: string;
+  wmsCatalogRoot?: string;
 };
 
 export type Snapshot = {
@@ -53,6 +59,8 @@ const gibsStaticUrlTemplate =
   "https://gibs.earthdata.nasa.gov/wmts/epsg3413/best/{layer}/default/{tileMatrixSet}/{z}/{y}/{x}.{format}";
 const noaaGeoTiffTemplate =
   "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/geotiff/{year}/{month}_{monthName}/N_{ymd}_concentration_v4.0.tif";
+const osiSafWmsFileTemplate =
+  "https://thredds.met.no/thredds/wms/osisaf/met.no/ice/amsr2_conc/{YYYY}/{MM}/ice_conc_nh_polstere-100_amsr2_{YYYYMMDD}1200.nc";
 
 export const dataset: DatasetResponse = {
   mapConfig: {
@@ -107,18 +115,6 @@ export const dataset: DatasetResponse = {
     // }
   },
   iceSources: {
-    seaIceConcentration: {
-      id: "seaIceConcentration",
-      label: "Sea Ice Concentration",
-      layer: "SeaIce_Concentration",
-      tileMatrixSet: "250m",
-      format: "png",
-      attribution: "NSIDC · NASA GIBS",
-      infoUrl: "https://earthdata.nasa.gov/gibs",
-      urlTemplate: gibsUrlTemplate,
-      opacity: 0.7,
-      kind: "wmts"
-    },
     noaaSeaIceConcentration: {
       id: "noaaSeaIceConcentration",
       label: "NOAA Sea Ice Concentration (GeoTIFF)",
@@ -131,6 +127,40 @@ export const dataset: DatasetResponse = {
       opacity: 0.7,
       kind: "geotiff"
     },
+
+    osiSafAmsr2Wms: {
+      id: "osiSafAmsr2Wms",
+      label: "OSI SAF AMSR2 SIC (WMS · ice_conc)",
+      layer: "ice_conc",
+      tileMatrixSet: "wms",
+      format: "png",
+      attribution: "EUMETSAT OSI SAF",
+      infoUrl: "https://osi-saf.eumetsat.int/products/sea-ice-products",
+      urlTemplate: osiSafWmsFileTemplate,
+      opacity: 0.75,
+      kind: "wms",
+      wmsTime: false,
+      wmsCrs: ["EPSG:3857", "CRS:84", "EPSG:4326"],
+      wmsCatalogRoot:
+        "https://thredds.met.no/thredds/catalog/osisaf/met.no/ice/amsr2_conc",
+    },
+    osiSafAmsr2WmsUncertainty: {
+      id: "osiSafAmsr2WmsUncertainty",
+      label: "OSI SAF AMSR2 SIC (WMS · total_uncertainty)",
+      layer: "total_uncertainty",
+      tileMatrixSet: "wms",
+      format: "png",
+      attribution: "EUMETSAT OSI SAF",
+      infoUrl: "https://osi-saf.eumetsat.int/products/sea-ice-products",
+      urlTemplate: osiSafWmsFileTemplate,
+      opacity: 0.75,
+      kind: "wms",
+      wmsTime: false,
+      wmsCrs: ["EPSG:3857", "CRS:84", "EPSG:4326"],
+      wmsCatalogRoot:
+        "https://thredds.met.no/thredds/catalog/osisaf/met.no/ice/amsr2_conc",
+    },
+    
   },
   overlays: {
     coastlines: {
@@ -151,7 +181,7 @@ export const dataset: DatasetResponse = {
       format: "png",
       attribution: "NASA GIBS",
       urlTemplate: gibsStaticUrlTemplate,
-        opacity: 1
+      opacity: 0.45
     },
     graticuleExtended: {
       id: "graticuleExtended",
@@ -166,42 +196,71 @@ export const dataset: DatasetResponse = {
   },
   snapshots: [
     {
-      label: "Jan 12",
-      date: "2026-01-12",
+      label: "Feb 01",
+      date: "2026-02-01",
       extent: 13.92,
       anomaly: -0.34,
       drift: "NNE",
       concentration: 92
     },
     {
-      label: "Jan 16",
-      date: "2026-01-16",
+      label: "Feb 02",
+      date: "2026-02-02",
       extent: 13.71,
       anomaly: -0.41,
       drift: "NE",
       concentration: 89
     },
     {
-      label: "Jan 19",
-      date: "2026-01-19",
+      label: "Feb 03",
+      date: "2026-02-03",
       extent: 13.55,
       anomaly: -0.48,
       drift: "E",
       concentration: 86
     },
     {
-      label: "Jan 21",
-      date: "2026-01-21",
+      label: "Feb 04",
+      date: "2026-02-04",
       extent: 13.42,
       anomaly: -0.53,
       drift: "ESE",
       concentration: 83
+    },
+    {
+      label: "Feb 05",
+      date: "2026-02-05",
+      extent: 13.66,
+      anomaly: -0.36,
+      drift: "ENE",
+      concentration: 90
+    },
+    {
+      label: "Feb 06",
+      date: "2026-02-06",
+      extent: 13.58,
+      anomaly: -0.39,
+      drift: "NE",
+      concentration: 88
+    },
+    {
+      label: "Feb 07",
+      date: "2026-02-07",
+      extent: 13.49,
+      anomaly: -0.42,
+      drift: "E",
+      concentration: 87
+    },
+    {
+      label: "Feb 08",
+      date: "2026-02-08",
+      extent: 13.44,
+      anomaly: -0.45,
+      drift: "ESE",
+      concentration: 85
     }
   ],
   calendarDays: [
-    null,
-    null,
-    null,
     1,
     2,
     3,
@@ -229,17 +288,14 @@ export const dataset: DatasetResponse = {
     25,
     26,
     27,
-    28,
-    29,
-    30,
-    31
+    28
   ],
   defaults: {
-    baseLayerKey: "modis",
-    iceSourceKey: "seaIceConcentration",
+    baseLayerKey: "",
+    iceSourceKey: "",
     showCoastlines: true,
     showGraticule: true,
-    defaultDate: "2026-01-12"
+    defaultDate: "2026-02-08"
   }
 };
 
@@ -263,6 +319,16 @@ export const buildTileUrl = (source: TileLayerSource, date: string) =>
     .replace("{time}", date)
     .replace("{tileMatrixSet}", source.tileMatrixSet)
     .replace("{format}", source.format);
+
+export const buildWmsUrl = (source: TileLayerSource, date: string) => {
+  const [year, month, day] = date.split("-");
+  const ymd = `${year}${month}${day}`;
+  return source.urlTemplate
+    .replace("{YYYY}", year)
+    .replace("{MM}", month)
+    .replace("{DD}", day)
+    .replace("{YYYYMMDD}", ymd);
+};
 
 export const buildGeoTiffUrl = (source: TileLayerSource, date: string) => {
   const [year, month, day] = date.split("-");

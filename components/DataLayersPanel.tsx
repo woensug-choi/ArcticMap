@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { DatasetResponse, TileLayerSource } from "@/lib/datasets";
-import { buildGeoTiffUrl, buildTileUrl } from "@/lib/datasets";
+import { buildGeoTiffUrl, buildTileUrl, buildWmsUrl } from "@/lib/datasets";
 
 interface DataLayersPanelProps {
   dataset: DatasetResponse | null;
@@ -65,6 +65,8 @@ export default function DataLayersPanel({
           <span className="break-all text-slate-300">
             {source.kind === "geotiff"
               ? buildGeoTiffUrl(source, sampleDate)
+              : source.kind === "wms"
+                ? buildWmsUrl(source, sampleDate)
               : buildTileUrl(source, sampleDate)}
           </span>
         </p>

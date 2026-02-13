@@ -204,23 +204,34 @@ h6 {
     "Segoe UI", sans-serif;
 }
 
-.leaflet-container {
+.ol-viewport {
   background: #2b2b2b;
   font-family: inherit;
 }
 
-.leaflet-control-zoom a {
+.ol-control button {
   background: #0f172a;
   color: #e2e8f0;
   border: 1px solid #1f2937;
 }
 
-.leaflet-control-zoom a:hover {
+.ol-control button:hover {
   background: #1e293b;
 }
 
-.leaflet-container .graticule-layer {
-  filter: brightness(1.6) contrast(1.2) saturate(0) invert(1);
+.ol-zoom {
+  right: 0.75rem;
+  left: auto;
+  top: 0.75rem;
+}
+
+.ol-layer.graticule-layer,
+.ol-layer.graticule-layer canvas,
+.ol-layer.graticule-layer img,
+.graticule-layer,
+.graticule-layer canvas,
+.graticule-layer img {
+  filter: brightness(0) invert(1);
   mix-blend-mode: screen;
 }
 
