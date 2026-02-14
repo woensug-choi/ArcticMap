@@ -34,6 +34,7 @@ export default function HomePage() {
   );
   const [showCoastlines, setShowCoastlines] = useState(dataset.defaults.showCoastlines); //해안선 표시 위경도 격자 표시여부 
   const [showGraticule, setShowGraticule] = useState(dataset.defaults.showGraticule);
+  const [iceStatus, setIceStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const { t, locale } = useLanguage();
 
   const fallbackDates = useMemo(
@@ -59,31 +60,62 @@ export default function HomePage() {
   }, [availableDates, activeDate]);
 
   useEffect(() => {
-    if (!activeIceSource || activeIceSource.kind !== "wms" || !activeIceSource.wmsCatalogRoot) {
+    if (!activeIceSource) {
       setAvailableDates(fallbackDates);
       return;
     }
 
     const controller = new AbortController();
     const loadDates = async () => {
-      try {
-        const params = new URLSearchParams({ root: activeIceSource.wmsCatalogRoot });
-        const res = await fetch(`/api/wmsdates?${params.toString()}`, {
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          throw new Error(await res.text());
+      if (activeIceSource.kind === "wms" && activeIceSource.wmsCatalogRoot) {
+        try {
+          const params = new URLSearchParams({ root: activeIceSource.wmsCatalogRoot });
+          const res = await fetch(`/api/wmsdates?${params.toString()}`, {
+            signal: controller.signal,
+          });
+          if (!res.ok) {
+            throw new Error(await res.text());
+          }
+          const data = (await res.json()) as { dates?: string[] };
+          if (Array.isArray(data.dates) && data.dates.length > 0) {
+            setAvailableDates([...data.dates].sort());
+            return;
+          }
+        } catch (e) {
+          if (!controller.signal.aborted) {
+            console.warn("[dates] WMS catalog load failed", e);
+          }
         }
-        const data = (await res.json()) as { dates?: string[] };
-        if (Array.isArray(data.dates) && data.dates.length > 0) {
-          setAvailableDates([...data.dates].sort());
-          return;
-        }
-      } catch (e) {
-        if (!controller.signal.aborted) {
-          console.warn("[dates] WMS catalog load failed", e);
-        }
+        setAvailableDates(fallbackDates);
+        return;
       }
+
+      if (activeIceSource.kind === "wmts" && activeIceSource.wmtsCapabilitiesUrl) {
+        try {
+          const params = new URLSearchParams({
+            url: activeIceSource.wmtsCapabilitiesUrl,
+            layer: activeIceSource.layer,
+          });
+          const res = await fetch(`/api/wmtsdates?${params.toString()}`, {
+            signal: controller.signal,
+          });
+          if (!res.ok) {
+            throw new Error(await res.text());
+          }
+          const data = (await res.json()) as { dates?: string[] };
+          if (Array.isArray(data.dates) && data.dates.length > 0) {
+            setAvailableDates([...data.dates].sort());
+            return;
+          }
+        } catch (e) {
+          if (!controller.signal.aborted) {
+            console.warn("[dates] WMTS capabilities load failed", e);
+          }
+        }
+        setAvailableDates(fallbackDates);
+        return;
+      }
+
       setAvailableDates(fallbackDates);
     };
 
@@ -112,6 +144,7 @@ export default function HomePage() {
     if (!isPlaying || availableDates.length === 0) return;
 
     const timer = setInterval(() => {
+      if (iceStatus === "loading") return;
       setActiveDate((current) => {
         const idx = availableDates.indexOf(current);
         const nextIdx = idx >= 0 ? (idx + 1) % availableDates.length : 0;
@@ -120,7 +153,7 @@ export default function HomePage() {
     }, playbackSpeed);
 
     return () => clearInterval(timer);
-  }, [isPlaying, playbackSpeed, availableDates]);
+  }, [isPlaying, playbackSpeed, availableDates, iceStatus]);
 
   const activeLabel = useMemo(() => {
     if (activeSnapshot?.label) return activeSnapshot.label;
@@ -229,6 +262,8 @@ export default function HomePage() {
               iceLayerUrl={iceLayerUrl}
               showCoastlines={showCoastlines}
               showGraticule={showGraticule}
+              isPlaying={isPlaying}
+              onIceStatusChange={setIceStatus}
             />
           </section>
         </div>

@@ -14,7 +14,7 @@ import { createXYZ } from "ol/tilegrid";
 import { defaults as defaultControls } from "ol/control";
 import { Card } from "@/components/ui/card";
 import type { DatasetResponse, TileLayerSource } from "@/lib/datasets";
-import { buildTileUrl } from "@/lib/datasets";
+import { buildLegendJsonUrl, buildLegendMetaUrl, buildLegendUrl, buildTileUrl } from "@/lib/datasets";
 import { useLanguage } from "@/components/LanguageProvider";
 
 interface MapViewerProps {
@@ -26,6 +26,8 @@ interface MapViewerProps {
   iceLayerUrl: string;
   showCoastlines: boolean;
   showGraticule: boolean;
+  isPlaying: boolean;
+  onIceStatusChange?: (state: "idle" | "loading" | "ready" | "error") => void;
 }
 
 const toExtent = (bounds: [[number, number], [number, number]]) =>
@@ -41,15 +43,37 @@ const createXyzSource = (
   attribution: string | undefined,
   tileGrid: TileGrid,
   projection: string,
+  wrapX = false,
+  reprojectionErrorThreshold?: number,
 ) =>
   new XYZ({
     url,
     tileGrid,
     projection,
     attributions: attribution ? [attribution] : undefined,
-    wrapX: false,
+    wrapX,
     crossOrigin: "anonymous",
+    transition: 0,
+    reprojectionErrorThreshold,
   });
+
+type LegendJsonResponse = {
+  continuous?: {
+    valueMin?: number;
+    valueMax?: number;
+    units?: string;
+    variableName?: string;
+    cmap?: { colorMapStrings?: string[] };
+  };
+};
+
+type LegendMetaResponse = {
+  units?: string;
+  scaleRange?: [string, string] | string[];
+};
+
+const legendJsonCache = new Map<string, LegendJsonResponse>();
+const legendMetaCache = new Map<string, LegendMetaResponse>();
 
 export default function MapViewer({
   dataset,
@@ -60,6 +84,8 @@ export default function MapViewer({
   iceLayerUrl,
   showCoastlines,
   showGraticule,
+  isPlaying,
+  onIceStatusChange,
 }: MapViewerProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<OlMap | null>(null);
@@ -68,6 +94,9 @@ export default function MapViewer({
   const coastLayer = useRef<TileLayer<XYZ> | null>(null);
   const graticuleLayer = useRef<TileLayer<XYZ> | null>(null);
   const iceLayer = useRef<TileLayer | null>(null);
+  const iceLayerSourceId = useRef<string | null>(null);
+  const coastUrlRef = useRef<string | null>(null);
+  const graticuleUrlRef = useRef<string | null>(null);
   const cursorCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
   const [iceStatus, setIceStatus] = useState<{
     state: "idle" | "loading" | "ready" | "error";
@@ -77,6 +106,22 @@ export default function MapViewer({
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   const { t } = useLanguage();
+  const legendUrl =
+    activeIceSource && activeDate ? buildLegendUrl(activeIceSource, activeDate) : "";
+  const legendJsonUrl = activeIceSource ? buildLegendJsonUrl(activeIceSource) : "";
+  const legendMetaUrl =
+    activeIceSource && activeDate ? buildLegendMetaUrl(activeIceSource, activeDate) : "";
+  const [legendImageOrientation, setLegendImageOrientation] = useState<"horizontal" | "vertical" | null>(
+    null,
+  );
+  const legendOrientation = activeIceSource?.legendOrientation ?? legendImageOrientation;
+  const [legendData, setLegendData] = useState<{
+    gradient: string;
+    min: number;
+    max: number;
+    units?: string;
+    label?: string;
+  } | null>(null);
   const handleRetry = () => setIceReloadToken((value) => value + 1);
   const setLoadingStatus = () =>
     setIceStatus((prev) => (prev.state === "error" ? prev : { state: "loading" }));
@@ -94,11 +139,11 @@ export default function MapViewer({
     if (supported.length === 0 || supported.includes(mapProjection.toUpperCase())) {
       return mapProjection;
     }
-    if (supported.includes("EPSG:3857")) {
-      return "EPSG:3857";
-    }
     if (supported.includes("EPSG:4326") || supported.includes("CRS:84")) {
       return "EPSG:4326";
+    }
+    if (supported.includes("EPSG:3857")) {
+      return "EPSG:3857";
     }
     return mapProjection;
   };
@@ -112,6 +157,19 @@ export default function MapViewer({
       STYLES: source.wmsDefaultStyle ?? "",
     };
 
+    if (source.wmsPalette) {
+      params.palette = source.wmsPalette;
+    }
+    if (source.wmsColorScaleRange) {
+      params.colorscalerange = source.wmsColorScaleRange;
+    }
+    if (source.wmsNumColorBands) {
+      params.numcolorbands = String(source.wmsNumColorBands);
+    }
+    if (source.wmsLogScale) {
+      params.logscale = "true";
+    }
+
     if (date && source.wmsTime !== false) {
       const today = new Date().toISOString().slice(0, 10);
       if (date <= today) {
@@ -121,6 +179,36 @@ export default function MapViewer({
 
     return params;
   };
+
+  const resolveTileGrid = (projectionCode: string, tileSize: number | undefined) => {
+    if (!dataset || !tileGridRef.current) return null;
+    if (projectionCode === dataset.mapConfig.projection) {
+      return tileGridRef.current;
+    }
+    if (projectionCode === "EPSG:4326") {
+      const size = tileSize ?? 256;
+      const extent: [number, number, number, number] = [-180, -90, 180, 90];
+      const origin: [number, number] = [-180, 90];
+      const maxZoom = 10;
+      const baseResolution = 180 / size;
+      const resolutions = Array.from({ length: maxZoom + 1 }, (_, z) => baseResolution / 2 ** z);
+      return new TileGrid({
+        extent,
+        origin,
+        resolutions,
+        tileSize: size,
+      });
+    }
+    const projection = getProjection(projectionCode);
+    return createXYZ({
+      extent: projection?.getExtent(),
+      tileSize: tileSize ?? 256,
+    });
+  };
+
+  useEffect(() => {
+    onIceStatusChange?.(iceStatus.state);
+  }, [iceStatus.state, onIceStatusChange]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current || !dataset) return;
@@ -158,15 +246,17 @@ export default function MapViewer({
       target: mapRef.current,
       view,
       controls: defaultControls({ zoom: true, attribution: true }),
-      loadTilesWhileAnimating: true,
-      loadTilesWhileInteracting: true,
+      loadTilesWhileAnimating: false,
+      loadTilesWhileInteracting: false,
     });
 
     baseLayer.current = new TileLayer({
       source: createXyzSource("", undefined, tileGrid, projectionCode),
       opacity: 0.9,
-      preload: 1,
+      preload: 0,
       useInterimTilesOnError: true,
+      updateWhileAnimating: false,
+      updateWhileInteracting: false,
       className: "basemap-layer",
     });
     baseLayer.current.setZIndex(10);
@@ -231,6 +321,11 @@ export default function MapViewer({
   }, [dataset]);
 
   useEffect(() => {
+    coastUrlRef.current = null;
+    graticuleUrlRef.current = null;
+  }, [dataset]);
+
+  useEffect(() => {
     if (!dataset || !tileGridRef.current || !baseLayer.current) return;
 
     if (!baseLayerUrl) {
@@ -255,6 +350,8 @@ export default function MapViewer({
 
     const url = overlayTileUrl(dataset.overlays.coastlines, activeDate);
     if (!url) return;
+    if (url === coastUrlRef.current) return;
+    coastUrlRef.current = url;
 
     coastLayer.current.setSource(
       createXyzSource(
@@ -272,6 +369,8 @@ export default function MapViewer({
 
     const url = overlayTileUrl(dataset.overlays.graticule, activeDate);
     if (!url) return;
+    if (url === graticuleUrlRef.current) return;
+    graticuleUrlRef.current = url;
 
     graticuleLayer.current.setSource(
       createXyzSource(
@@ -301,12 +400,15 @@ export default function MapViewer({
     if (!map || !dataset) return;
 
     const previousLayer = iceLayer.current;
+    const previousSourceId = iceLayerSourceId.current;
+    const allowEarlyReady = isPlaying && activeIceSource?.kind === "wmts";
 
     if (!iceLayerUrl || !activeIceSource) {
       if (previousLayer) {
         map.removeLayer(previousLayer);
         iceLayer.current = null;
       }
+      iceLayerSourceId.current = null;
       setIceStatus({ state: "idle" });
       return;
     }
@@ -322,6 +424,15 @@ export default function MapViewer({
     let hadError = false;
     let readyTimer: ReturnType<typeof setTimeout> | null = null;
     let isFinalized = false;
+    let isActivated = false;
+    let hasShownLayer = false;
+
+    const activateLayer = () => {
+      if (!layer || isActivated) return;
+      isActivated = true;
+      iceLayer.current = layer;
+      iceLayerSourceId.current = activeIceSource.id;
+    };
 
     const finalizeLayer = () => {
       if (!layer || isFinalized) return;
@@ -330,7 +441,7 @@ export default function MapViewer({
       if (previousLayer && holdPrevious) {
         map.removeLayer(previousLayer);
       }
-      iceLayer.current = layer;
+      activateLayer();
     };
 
     const markReadyIfIdle = () => {
@@ -342,11 +453,23 @@ export default function MapViewer({
 
     const onTileLoadStart = () => {
       pendingTiles += 1;
-      setLoadingStatus();
+      if (!allowEarlyReady || !hasShownLayer) {
+        setLoadingStatus();
+      }
     };
 
     const onTileLoadEnd = () => {
       pendingTiles = Math.max(0, pendingTiles - 1);
+      if (layer && !hasShownLayer) {
+        hasShownLayer = true;
+        if (!holdPrevious) {
+          layer.setOpacity(iceOpacity);
+          if (allowEarlyReady) {
+            setIceStatus({ state: "ready" });
+            finalizeLayer();
+          }
+        }
+      }
       markReadyIfIdle();
     };
 
@@ -369,6 +492,8 @@ export default function MapViewer({
       const mapProjection = dataset.mapConfig.projection;
       const wmsProjection = resolveWmsProjection(activeIceSource, mapProjection);
       const params = buildWmsParams(activeIceSource, activeDate);
+      const reprojectionErrorThreshold =
+        wmsProjection !== dataset.mapConfig.projection ? 2 : undefined;
 
       const tileGrid =
         wmsProjection === dataset.mapConfig.projection && tileGridRef.current
@@ -385,33 +510,45 @@ export default function MapViewer({
         tileGrid,
         crossOrigin: "anonymous",
         attributions: activeIceSource.attribution,
+        transition: 0,
+        reprojectionErrorThreshold,
       });
 
       layer = new TileLayer({
         source,
         opacity: 0,
-        preload: 1,
+        preload: 0,
         useInterimTilesOnError: true,
+        updateWhileAnimating: false,
+        updateWhileInteracting: false,
         className: "ice-layer",
       });
     } else if (activeIceSource.kind === "geotiff") {
       setIceStatus({ state: "error", message: "geotiff not supported in OpenLayers" });
       return;
     } else {
-      if (!tileGridRef.current) return;
+      const sourceProjection = activeIceSource.sourceProjection ?? dataset.mapConfig.projection;
+      const tileGrid = resolveTileGrid(sourceProjection, activeIceSource.tileSize);
+      if (!tileGrid) return;
+      const reprojectionErrorThreshold =
+        sourceProjection !== dataset.mapConfig.projection ? 2 : undefined;
 
       source = createXyzSource(
         iceLayerUrl,
         activeIceSource.attribution,
-        tileGridRef.current,
-        dataset.mapConfig.projection,
+        tileGrid,
+        sourceProjection,
+        activeIceSource.wrapX ?? false,
+        reprojectionErrorThreshold,
       );
 
       layer = new TileLayer({
         source,
         opacity: 0,
-        preload: 1,
+        preload: 0,
         useInterimTilesOnError: true,
+        updateWhileAnimating: false,
+        updateWhileInteracting: false,
         className: "ice-layer",
       });
     }
@@ -424,7 +561,7 @@ export default function MapViewer({
       layer.setZIndex(20);
       map.addLayer(layer);
       if (!holdPrevious) {
-        iceLayer.current = layer;
+        activateLayer();
       }
       readyTimer = setTimeout(markReadyIfIdle, 300);
 
@@ -436,7 +573,7 @@ export default function MapViewer({
         }
       };
     }
-  }, [dataset, iceLayerUrl, activeIceSource, activeDate, iceReloadToken]);
+  }, [dataset, iceLayerUrl, activeIceSource, activeDate, iceReloadToken, isPlaying]);
 
   useEffect(() => {
     if (activeIceSource?.opacity === undefined) return;
@@ -444,6 +581,102 @@ export default function MapViewer({
       iceLayer.current.setOpacity(activeIceSource.opacity);
     }
   }, [activeIceSource?.opacity]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!legendJsonUrl && !legendMetaUrl) {
+      setLegendData(null);
+      return;
+    }
+
+    const loadLegend = async () => {
+      try {
+        if (legendJsonUrl) {
+          const cached = legendJsonCache.get(legendJsonUrl);
+          const data = cached
+            ? cached
+            : await (async () => {
+                const res = await fetch(legendJsonUrl);
+                if (!res.ok) throw new Error(`Legend fetch failed: ${res.status}`);
+                const payload = (await res.json()) as LegendJsonResponse;
+                legendJsonCache.set(legendJsonUrl, payload);
+                return payload;
+              })();
+
+          const continuous = data.continuous;
+          const colors = continuous?.cmap?.colorMapStrings;
+          if (!continuous || !Array.isArray(colors) || colors.length === 0) {
+            if (!cancelled) setLegendData(null);
+            return;
+          }
+
+          const steps = Math.min(24, colors.length);
+          const stops = Array.from({ length: steps }, (_, idx) => {
+            const colorIndex = Math.round((idx / (steps - 1)) * (colors.length - 1));
+            const color = colors[colorIndex] ?? colors[0];
+            const pct = ((idx / (steps - 1)) * 100).toFixed(2);
+            return `${color} ${pct}%`;
+          });
+          const isIceConcLegend = activeIceSource?.id === "osiSafAmsr2Wms";
+          const gradient = isIceConcLegend ? "" : `linear-gradient(90deg, ${stops.join(", ")})`;
+
+          if (!cancelled) {
+            setLegendData({
+              gradient,
+              min: Number(continuous.valueMin ?? 0),
+              max: Number(continuous.valueMax ?? 1),
+              units: continuous.units ?? undefined,
+              label: continuous.variableName ?? undefined,
+            });
+          }
+          return;
+        }
+
+        if (legendMetaUrl) {
+          const cached = legendMetaCache.get(legendMetaUrl);
+          const data = cached
+            ? cached
+            : await (async () => {
+                const res = await fetch(legendMetaUrl);
+                if (!res.ok) throw new Error(`Legend meta fetch failed: ${res.status}`);
+                const payload = (await res.json()) as LegendMetaResponse;
+                legendMetaCache.set(legendMetaUrl, payload);
+                return payload;
+              })();
+          const [minRaw, maxRaw] = Array.isArray(data.scaleRange)
+            ? data.scaleRange
+            : [undefined, undefined];
+          const min = minRaw !== undefined ? Number(minRaw) : 0;
+          const max = maxRaw !== undefined ? Number(maxRaw) : 1;
+          if (!cancelled) {
+            setLegendData({
+              gradient: "",
+              min,
+              max,
+              units: data.units ?? undefined,
+            });
+          }
+        }
+      } catch {
+        if (!cancelled) setLegendData(null);
+      }
+    };
+
+    void loadLegend();
+    return () => {
+      cancelled = true;
+    };
+  }, [legendJsonUrl, legendMetaUrl]);
+
+  useEffect(() => {
+    setLegendImageOrientation(null);
+  }, [legendUrl]);
+
+  const handleLegendImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = event.currentTarget;
+    if (!naturalWidth || !naturalHeight) return;
+    setLegendImageOrientation(naturalHeight > naturalWidth ? "vertical" : "horizontal");
+  };
 
   return (
     <Card className="relative min-h-[655px] overflow-hidden border-slate-700">
@@ -453,6 +686,64 @@ export default function MapViewer({
         {t("latitudeLabel")}: {cursorCoords ? cursorCoords.lat.toFixed(3) : "--"} /{" "}
         {t("longitudeLabel")}: {cursorCoords ? cursorCoords.lon.toFixed(3) : "--"}
       </div>
+      {legendUrl ? (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-slate-700/70 bg-slate-900/85 px-4 py-2 text-[10px] text-slate-200 shadow-md">
+          <div className="flex items-center justify-between gap-3 text-[10px] text-slate-300">
+            <span className="uppercase text-slate-400">{t("legendLabel")}</span>
+            {legendData?.units ? <span>{legendData.units}</span> : null}
+          </div>
+          {legendData ? (
+            <div className="mt-1 w-[320px]">
+              {legendData.gradient ? (
+                <div className="h-4 w-full rounded-full border border-slate-700/70 bg-slate-950/40 p-[2px]">
+                  <div
+                    className="h-full w-full rounded-full"
+                    style={{ background: legendData.gradient }}
+                  />
+                </div>
+              ) : (
+                <div className="h-4 w-full rounded-full border border-slate-700/70 bg-slate-950/40 p-[2px]">
+                  <div className="relative h-full w-full overflow-hidden rounded-full">
+                    <img
+                      src={legendUrl}
+                      alt={`${activeIceSource?.label ?? "legend"}`}
+                      className={
+                        legendOrientation === "vertical"
+                          ? "absolute left-1/2 top-1/2 h-[320px] w-[32px] -translate-x-1/2 -translate-y-1/2 rotate-90 object-cover"
+                          : "h-full w-full object-cover"
+                      }
+                      onLoad={handleLegendImageLoad}
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+                <span>{legendData.min.toFixed(2)}</span>
+                <span>{legendData.max.toFixed(2)}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1 w-[320px]">
+              <div className="h-4 w-full rounded-full border border-slate-700/70 bg-slate-950/40 p-[2px]">
+                <div className="relative h-full w-full overflow-hidden rounded-full">
+                  <img
+                  src={legendUrl}
+                  alt={`${activeIceSource?.label ?? "legend"}`}
+                  className={
+                    legendOrientation === "vertical"
+                      ? "absolute left-1/2 top-1/2 h-[320px] w-[32px] -translate-x-1/2 -translate-y-1/2 rotate-90 object-cover"
+                      : "h-full w-full object-cover"
+                  }
+                    onLoad={handleLegendImageLoad}
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <div className="absolute left-4 top-4 z-[1000] rounded-md bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300">
         <div>

@@ -54,6 +54,7 @@ export default function MapTestPage() {
           iceLayerUrl={iceLayerUrl}
           showCoastlines={showCoastlines}
           showGraticule={showGraticule}
+          isPlaying={false}
         />
       </div>
     </main>

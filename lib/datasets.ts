@@ -14,7 +14,19 @@ export type TileLayerSource = {
   wmsTime?: boolean;
   wmsStyles?: string[];
   wmsDefaultStyle?: string;
+  wmsPalette?: string;
+  wmsColorScaleRange?: string;
+  wmsNumColorBands?: number;
+  wmsLogScale?: boolean;
   wmsCatalogRoot?: string;
+  wmtsStyle?: string;
+  legendUrlTemplate?: string;
+  legendJsonUrlTemplate?: string;
+  legendOrientation?: "horizontal" | "vertical";
+  wmtsCapabilitiesUrl?: string;
+  sourceProjection?: string;
+  tileSize?: number;
+  wrapX?: boolean;
 };
 
 export type Snapshot = {
@@ -61,6 +73,14 @@ const noaaGeoTiffTemplate =
   "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/geotiff/{year}/{month}_{monthName}/N_{ymd}_concentration_v4.0.tif";
 const osiSafWmsFileTemplate =
   "https://thredds.met.no/thredds/wms/osisaf/met.no/ice/amsr2_conc/{YYYY}/{MM}/ice_conc_nh_polstere-100_amsr2_{YYYYMMDD}1200.nc";
+const copernicusWmtsTemplate =
+  "https://wmts.marine.copernicus.eu/teroWmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={layer}&STYLE={style}&TILEMATRIXSET={tileMatrixSet}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/{format}&TIME={time}T12:00:00.000Z";
+const copernicusWmtsLegendTemplate =
+  "https://wmts.marine.copernicus.eu/teroWmts?SERVICE=WMTS&REQUEST=GetLegend&LAYER={layer}&STYLE={style}&FORMAT=image/svg+xml";
+const copernicusWmtsLegendJsonTemplate =
+  "https://wmts.marine.copernicus.eu/teroWmts?SERVICE=WMTS&REQUEST=GetLegend&LAYER={layer}&STYLE={style}&FORMAT=application/json";
+const copernicusWmtsCapabilitiesUrl =
+  "https://wmts.marine.copernicus.eu/teroWmts/ARCTIC_ANALYSISFORECAST_PHY_ICE_002_011/cmems_mod_arc_phy_anfc_nextsim_hm_202311?request=GetCapabilities&service=WMTS";
 
 export const dataset: DatasetResponse = {
   mapConfig: {
@@ -141,6 +161,10 @@ export const dataset: DatasetResponse = {
       kind: "wms",
       wmsTime: false,
       wmsCrs: ["EPSG:3857", "CRS:84", "EPSG:4326"],
+      wmsDefaultStyle: "boxfill",
+      wmsPalette: "rainbow",
+      wmsColorScaleRange: "0,100",
+      legendOrientation: "vertical",
       wmsCatalogRoot:
         "https://thredds.met.no/thredds/catalog/osisaf/met.no/ice/amsr2_conc",
     },
@@ -157,8 +181,68 @@ export const dataset: DatasetResponse = {
       kind: "wms",
       wmsTime: false,
       wmsCrs: ["EPSG:3857", "CRS:84", "EPSG:4326"],
+      wmsDefaultStyle: "boxfill",
+      wmsColorScaleRange: "-50,50",
+      legendOrientation: "vertical",
       wmsCatalogRoot:
         "https://thredds.met.no/thredds/catalog/osisaf/met.no/ice/amsr2_conc",
+    },
+    copernicusSeaIceThickness: {
+      id: "copernicusSeaIceThickness",
+      label: "Copernicus Sea Ice Thickness (WMTS · sithick)",
+      layer:
+        "ARCTIC_ANALYSISFORECAST_PHY_ICE_002_011/cmems_mod_arc_phy_anfc_nextsim_hm_202311/sithick",
+      tileMatrixSet: "EPSG:4326",
+      format: "png",
+      attribution: "Copernicus Marine Service",
+      infoUrl: "https://data.marine.copernicus.eu/product/ARCTIC_ANALYSISFORECAST_PHY_ICE_002_011",
+      urlTemplate: copernicusWmtsTemplate,
+      opacity: 0.8,
+      kind: "wmts",
+      wmtsStyle: "cmap:ice",
+      legendUrlTemplate: copernicusWmtsLegendTemplate,
+      legendJsonUrlTemplate: copernicusWmtsLegendJsonTemplate,
+      wmtsCapabilitiesUrl: copernicusWmtsCapabilitiesUrl,
+      sourceProjection: "EPSG:4326",
+      wrapX: true,
+    },
+    copernicusSeaIceVelocityEast: {
+      id: "copernicusSeaIceVelocityEast",
+      label: "Copernicus Sea Ice Velocity (WMTS · vxsi)",
+      layer:
+        "ARCTIC_ANALYSISFORECAST_PHY_ICE_002_011/cmems_mod_arc_phy_anfc_nextsim_hm_202311/vxsi",
+      tileMatrixSet: "EPSG:4326",
+      format: "png",
+      attribution: "Copernicus Marine Service",
+      infoUrl: "https://data.marine.copernicus.eu/product/ARCTIC_ANALYSISFORECAST_PHY_ICE_002_011",
+      urlTemplate: copernicusWmtsTemplate,
+      opacity: 0.8,
+      kind: "wmts",
+      wmtsStyle: "cmap:delta",
+      legendUrlTemplate: copernicusWmtsLegendTemplate,
+      legendJsonUrlTemplate: copernicusWmtsLegendJsonTemplate,
+      wmtsCapabilitiesUrl: copernicusWmtsCapabilitiesUrl,
+      sourceProjection: "EPSG:4326",
+      wrapX: true,
+    },
+    copernicusSeaIceVelocityNorth: {
+      id: "copernicusSeaIceVelocityNorth",
+      label: "Copernicus Sea Ice Velocity (WMTS · vysi)",
+      layer:
+        "ARCTIC_ANALYSISFORECAST_PHY_ICE_002_011/cmems_mod_arc_phy_anfc_nextsim_hm_202311/vysi",
+      tileMatrixSet: "EPSG:4326",
+      format: "png",
+      attribution: "Copernicus Marine Service",
+      infoUrl: "https://data.marine.copernicus.eu/product/ARCTIC_ANALYSISFORECAST_PHY_ICE_002_011",
+      urlTemplate: copernicusWmtsTemplate,
+      opacity: 0.8,
+      kind: "wmts",
+      wmtsStyle: "cmap:delta",
+      legendUrlTemplate: copernicusWmtsLegendTemplate,
+      legendJsonUrlTemplate: copernicusWmtsLegendJsonTemplate,
+      wmtsCapabilitiesUrl: copernicusWmtsCapabilitiesUrl,
+      sourceProjection: "EPSG:4326",
+      wrapX: true,
     },
     
   },
@@ -170,7 +254,7 @@ export const dataset: DatasetResponse = {
       tileMatrixSet: "250m",
       format: "png",
       attribution: "NASA GIBS",
-      urlTemplate: gibsUrlTemplate,
+      urlTemplate: gibsStaticUrlTemplate,
       opacity: 0.9
     },
     graticule: {
@@ -318,7 +402,70 @@ export const buildTileUrl = (source: TileLayerSource, date: string) =>
     .replace("{layer}", source.layer)
     .replace("{time}", date)
     .replace("{tileMatrixSet}", source.tileMatrixSet)
-    .replace("{format}", source.format);
+    .replace("{format}", source.format)
+    .replace("{style}", source.wmtsStyle ?? "");
+
+export const buildLegendUrl = (source: TileLayerSource, date: string) => {
+  if (source.legendUrlTemplate) {
+    const layer = encodeURIComponent(source.layer);
+    const style = encodeURIComponent(source.wmtsStyle ?? source.wmsDefaultStyle ?? "");
+    return source.legendUrlTemplate
+      .replace("{layer}", layer)
+      .replace("{style}", style);
+  }
+
+  if (source.kind === "wms") {
+    const base = buildWmsUrl(source, date);
+    const params = new URLSearchParams({
+      service: "WMS",
+      request: "GetLegendGraphic",
+      format: "image/png",
+      layer: source.layer,
+      style: source.wmsDefaultStyle ?? "",
+      colorbaronly: "true",
+      width: "320",
+      height: "32",
+      colorbarwidth: "320",
+      colorbarheight: "32",
+    });
+    if (source.wmsPalette) {
+      params.set("palette", source.wmsPalette);
+    }
+    if (source.wmsColorScaleRange) {
+      params.set("colorscalerange", source.wmsColorScaleRange);
+    }
+    if (source.wmsNumColorBands) {
+      params.set("numcolorbands", String(source.wmsNumColorBands));
+    }
+    if (source.wmsLogScale) {
+      params.set("logscale", "true");
+    }
+    return `${base}?${params.toString()}`;
+  }
+
+  return "";
+};
+
+export const buildLegendJsonUrl = (source: TileLayerSource) => {
+  if (!source.legendJsonUrlTemplate) return "";
+  const layer = encodeURIComponent(source.layer);
+  const style = encodeURIComponent(source.wmtsStyle ?? source.wmsDefaultStyle ?? "");
+  return source.legendJsonUrlTemplate
+    .replace("{layer}", layer)
+    .replace("{style}", style);
+};
+
+export const buildLegendMetaUrl = (source: TileLayerSource, date: string) => {
+  if (source.kind !== "wms") return "";
+  const base = buildWmsUrl(source, date);
+  const params = new URLSearchParams({
+    service: "WMS",
+    request: "GetMetadata",
+    item: "layerDetails",
+    layerName: source.layer,
+  });
+  return `${base}?${params.toString()}`;
+};
 
 export const buildWmsUrl = (source: TileLayerSource, date: string) => {
   const [year, month, day] = date.split("-");
